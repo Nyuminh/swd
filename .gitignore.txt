@@ -1,0 +1,62 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Bb]in/
+[Oo]bj/
+[Rr]elease/
+[Dd]ebug/
+out/
+
+# Rider
+.idea/
+*.sln.iml
+
+# ReSharper
+_ReSharper*/
+*.DotSettings.user
+
+# NuGet packages
+*.nupkg
+packages/
+!packages/build/
+!packages/repositories.config
+
+# User Secrets
+secrets.json
+
+# Environment-specific settings
+# It's a good practice to commit appsettings.json as a template,
+# but ignore environment-specific overrides.
+appsettings.*.json
+!appsettings.Template.json
+
+# Publish output
+publish/
+[Pp]ublish/
+
+# Log and temp files
+*.log
+*.tmp
+*.temp
+logs/
+
+# Test results
+TestResults/
+*.trx
+
+# OS-generated files
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
