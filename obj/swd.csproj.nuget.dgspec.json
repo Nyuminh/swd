@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Admin\\Desktop\\swd\\swd.csproj": {}
+    "C:\\Users\\Admin\\Desktop\\swd\\swd\\swd.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Admin\\Desktop\\swd\\swd.csproj": {
+    "C:\\Users\\Admin\\Desktop\\swd\\swd\\swd.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Admin\\Desktop\\swd\\swd.csproj",
+        "projectUniqueName": "C:\\Users\\Admin\\Desktop\\swd\\swd\\swd.csproj",
         "projectName": "swd",
-        "projectPath": "C:\\Users\\Admin\\Desktop\\swd\\swd.csproj",
+        "projectPath": "C:\\Users\\Admin\\Desktop\\swd\\swd\\swd.csproj",
         "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Admin\\Desktop\\swd\\obj\\",
+        "outputPath": "C:\\Users\\Admin\\Desktop\\swd\\swd\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
