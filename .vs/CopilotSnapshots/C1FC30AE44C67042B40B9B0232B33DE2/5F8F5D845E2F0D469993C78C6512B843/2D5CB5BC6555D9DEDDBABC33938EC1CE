@@ -1,0 +1,52 @@
+﻿using MongoDB.Driver;
+using System;
+using System.Security.Cryptography.X509Certificates;
+using System.Net.Security;
+
+public class TestMongoConnection
+{
+    public static void Main()
+    {
+        Console.WriteLine("Testing MongoDB Atlas Connection...\n");
+        
+        var connectionString = "mongodb+srv://truongtxse180558_db_user:123@swd.wegvtjw.mongodb.net/?retryWrites=true&w=majority&tls=true&tlsAllowInvalidCertificates=true";
+        
+        try
+        {
+            var mongoClientSettings = MongoClientSettings.FromConnectionString(connectionString);
+            
+            // Configure timeouts
+            mongoClientSettings.ConnectTimeout = TimeSpan.FromSeconds(30);
+            mongoClientSettings.SocketTimeout = TimeSpan.FromSeconds(60);
+            mongoClientSettings.ServerSelectionTimeout = TimeSpan.FromSeconds(30);
+            
+            // Configure SSL/TLS
+            mongoClientSettings.SslSettings = new SslSettings
+            {
+                EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13,
+                ServerCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true
+            };
+            
+            var client = new MongoClient(mongoClientSettings);
+            var database = client.GetDatabase("swd");
+            
+            Console.WriteLine("✅ Connecting to MongoDB Atlas...");
+            
+            // Test connection by listing collections
+            var collections = database.ListCollectionNames().ToList();
+            
+            Console.WriteLine("✅ Connection successful!");
+            Console.WriteLine($"Found {collections.Count} collections:");
+            
+            foreach (var collection in collections)
+            {
+                Console.WriteLine($"  - {collection}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Connection failed: {ex.Message}");
+            Console.WriteLine($"\nStack trace:\n{ex.StackTrace}");
+        }
+    }
+}

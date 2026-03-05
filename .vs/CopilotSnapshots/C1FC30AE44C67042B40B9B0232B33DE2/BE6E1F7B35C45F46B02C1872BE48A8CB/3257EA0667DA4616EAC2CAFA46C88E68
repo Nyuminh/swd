@@ -1,0 +1,13 @@
+﻿{
+  "MongoDbSettings": {
+    "ConnectionString": "mongodb+srv://truongtxse180558_db_user:123@swd.wegvtjw.mongodb.net/?retryWrites=true&w=majority&connectTimeoutMS=10000&socketTimeoutMS=45000&serverSelectionTimeoutMS=10000&maxPoolSize=50",
+    "DatabaseName": "swd"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}

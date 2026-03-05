@@ -1,0 +1,13 @@
+﻿{
+  "MongoDbSettings": {
+    "ConnectionString": "mongodb+srv://truongtxse180558_db_user:123@swd.wegvtjw.mongodb.net/?retryWrites=true&w=majority&tls=true&tlsAllowInvalidCertificates=true",
+    "DatabaseName": "swd"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}

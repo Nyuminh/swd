@@ -1,0 +1,42 @@
+﻿using Microsoft.Extensions.Options;
+using MongoDB.Driver;
+using swd.Settings;
+
+
+namespace swd.Infrastructure.Persistence
+{
+    public class MongoDbContext
+    {
+        private readonly IMongoDatabase _database;
+
+        public MongoDbContext(IOptions<MongoDbSettings> settings)
+        {
+            var client = new MongoClient(settings.Value.ConnectionString);
+            _database = client.GetDatabase(settings.Value.DatabaseName);
+        }
+
+        // Add this for generic repository
+        public IMongoDatabase Database => _database;
+
+        public IMongoCollection<Product> Products =>
+            _database.GetCollection<Product>("Products");
+
+        public IMongoCollection<Order> Orders =>
+            _database.GetCollection<Order>("Orders");
+
+        public IMongoCollection<User> Users =>
+            _database.GetCollection<User>("Users");
+
+        public IMongoCollection<Cart> Carts =>
+            _database.GetCollection<Cart>("Carts");
+
+        public IMongoCollection<Promotion> Promotions =>
+            _database.GetCollection<Promotion>("Promotions");
+
+        public IMongoCollection<Category> Categories =>
+            _database.GetCollection<Category>("Categories");
+
+        public IMongoCollection<Combo> Combos =>
+            _database.GetCollection<Combo>("Combos");
+    }
+}

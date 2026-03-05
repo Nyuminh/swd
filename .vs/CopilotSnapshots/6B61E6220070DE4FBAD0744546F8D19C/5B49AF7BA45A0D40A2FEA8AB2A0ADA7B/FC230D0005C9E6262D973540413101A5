@@ -1,0 +1,55 @@
+﻿using MongoDB.Driver;
+
+var connectionString = "mongodb+srv://nyumingmoreno_db_user:123@swd.wegvtjw.mongodb.net/?appName=swd";
+var databaseName = "swd";
+
+try
+{
+    Console.WriteLine("Đang kết nối đến MongoDB...");
+    var client = new MongoClient(connectionString);
+    var database = client.GetDatabase(databaseName);
+
+    // Lấy danh sách tất cả các collections
+    var collections = await database.ListCollectionNamesAsync();
+    var collectionList = await collections.ToListAsync();
+
+    Console.WriteLine($"\n✓ Kết nối thành công đến database: {databaseName}");
+    Console.WriteLine($"Số lượng collections: {collectionList.Count}\n");
+
+    if (collectionList.Count == 0)
+    {
+        Console.WriteLine("Database chưa có collection nào.");
+        return;
+    }
+
+    Console.WriteLine("Danh sách Collections:");
+    foreach (var collectionName in collectionList)
+    {
+        Console.WriteLine($"  - {collectionName}");
+        
+        // Đếm số documents trong mỗi collection
+        var collection = database.GetCollection<MongoDB.Bson.BsonDocument>(collectionName);
+        var count = await collection.CountDocumentsAsync(MongoDB.Bson.BsonDocument.Parse("{}"));
+        Console.WriteLine($"    Số lượng documents: {count}");
+
+        // Hiển thị 2 documents đầu tiên
+        if (count > 0)
+        {
+            var documents = await collection.Find(MongoDB.Bson.BsonDocument.Parse("{}"))
+                .Limit(2)
+                .ToListAsync();
+            
+            Console.WriteLine($"    Dữ liệu mẫu:");
+            foreach (var doc in documents)
+            {
+                Console.WriteLine($"      {doc.ToJson()}");
+            }
+        }
+        Console.WriteLine();
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"✗ Lỗi kết nối: {ex.Message}");
+    Console.WriteLine($"Chi tiết: {ex.GetType().Name}");
+}

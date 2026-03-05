@@ -1,0 +1,15 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\Application",
+    "\\Application\\DTOs",
+    "\\Application\\DTOs\\Order",
+    "\\Domain",
+    "\\Domain\\Interfaces",
+    "\\Domain\\Models",
+    "\\Infrastructure",
+    "\\Infrastructure\\Persistence"
+  ],
+  "SelectedNode": "\\appsettings.json",
+  "PreviewInSolutionExplorer": false
+}
