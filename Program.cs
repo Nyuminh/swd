@@ -57,8 +57,6 @@ builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings"));
 
 // ── Email Settings ─────────────────────────────────────────────
-builder.Services.Configure<EmailSettings>(
-    builder.Configuration.GetSection("EmailSettings"));
 
 // ── MongoDB Client ─────────────────────────────────────────────
 builder.Services.AddSingleton<IMongoClient>(sp =>
@@ -83,7 +81,6 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<JwtTokenService>();
-builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserManagementService>();
 
