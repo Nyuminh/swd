@@ -1,7 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using swd.Application.Services;
+using Microsoft.AspNetCore.Mvc;
 using swd.Application.DTOs.Product;
-using System.Threading.Tasks;
+using swd.Application.Services;
 
 namespace swd.Presentation.Controllers
 {
@@ -16,25 +15,73 @@ namespace swd.Presentation.Controllers
             _productService = productService;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> CreateProduct([FromBody] CreateProductRequest request)
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var product = await _productService.CreateAsync(request);
-            return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, product);
+            var products = await _productService.GetAllAsync();
+            return Ok(new { total = products.Count, data = products });
         }
 
-        // Note: GetProductById is not implemented yet, but is required for CreatedAtAction.
-        // You can add it later.
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetProductById(string id)
+        public async Task<IActionResult> GetById(string id)
         {
-            // Implementation for getting a product by ID would go here.
-            return Ok(new { Message = $"GetProductById with id {id} not implemented yet." });
+            try
+            {
+                var product = await _productService.GetByIdAsync(id);
+                return Ok(product);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("category/{categoryId}")]
+        public async Task<IActionResult> GetByCategory(string categoryId)
+        {
+            var products = await _productService.GetByCategoryAsync(categoryId);
+            return Ok(new { total = products.Count, data = products });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreateProductRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var product = await _productService.CreateAsync(request);
+            return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(string id, [FromBody] UpdateProductRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var product = await _productService.UpdateAsync(id, request);
+                return Ok(product);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(string id)
+        {
+            try
+            {
+                await _productService.DeleteAsync(id);
+                return Ok(new { message = "Product deleted successfully." });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
         }
     }
 }
