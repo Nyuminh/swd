@@ -146,7 +146,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 // Thứ tự quan trọng: Authentication phải trước Authorization
 app.UseAuthentication();
