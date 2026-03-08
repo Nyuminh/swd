@@ -85,6 +85,7 @@ builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserManagementService>();
 builder.Services.AddScoped<CartComboService>();
+builder.Services.AddScoped<OrderService>();
 
 // ── Facades ────────────────────────────────────────────────────
 builder.Services.AddScoped<CheckoutFacade>();
@@ -135,6 +136,21 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:3000",      // Vite default port
+                "http://localhost:5173",      // Vite alternative port
+                "https://localhost:3000",     // HTTPS local
+                "https://localhost:5173"      // HTTPS local alternative
+              )
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
 
 // ─────────────────────────────────────────────────────────────
 var app = builder.Build();
