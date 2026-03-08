@@ -12,6 +12,10 @@ public class Cart
 
     public List<CartItem> Items { get; set; } = new();
 
+    public List<CartComboItem> ComboItems { get; set; } = new();
+
+    public int Version { get; set; } = 0;
+
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
 
@@ -25,4 +29,26 @@ public class CartItem
     public int Quantity { get; set; }
 
     public decimal Price { get; set; }
+}
+
+public class CartComboItem
+{
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string ComboId { get; set; }
+
+    public string ComboName { get; set; }
+
+    public int Quantity { get; set; }
+
+    public decimal UnitPrice { get; set; }
+
+    [BsonRepresentation(BsonType.ObjectId)]
+    [BsonIgnoreIfNull]
+    public string? PromotionId { get; set; }
+
+    public decimal DiscountPercent { get; set; }
+
+    public decimal FinalUnitPrice { get; set; }
+
+    public decimal LineTotal { get; set; }
 }
