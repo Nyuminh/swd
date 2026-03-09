@@ -1,27 +1,26 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MongoDB.Driver;
-using swd.Settings;
-using swd.Infrastructure.Persistence;
-using swd.Infrastructure.Repositories;
-using swd.Domain.Interfaces;
 using swd.Application.Facades;
 using swd.Application.Services;
+using swd.Domain.Interfaces;
+using swd.Infrastructure.Persistence;
+using swd.Infrastructure.Repositories;
+using swd.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── Controllers ───────────────────────────────────────────────
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// ── Swagger with JWT Bearer support ──────────────────────────
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "SWD API", Version = "v1" });
 
-    // Thêm ô nhập Bearer token trong Swagger UI
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -29,7 +28,7 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Nhập JWT token. Ví dụ: Bearer {token}"
+        Description = "Nhap JWT token. Vi du: Bearer {token}"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -48,17 +47,15 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// ── MongoDB Settings ───────────────────────────────────────────
 builder.Services.Configure<MongoDbSettings>(
     builder.Configuration.GetSection("MongoDbSettings"));
 
-// ── JWT Settings ───────────────────────────────────────────────
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings"));
 
-// ── Email Settings ─────────────────────────────────────────────
+builder.Services.Configure<GeminiSettings>(
+    builder.Configuration.GetSection("GeminiSettings"));
 
-// ── MongoDB Client ─────────────────────────────────────────────
 builder.Services.AddSingleton<IMongoClient>(sp =>
 {
     var settings = builder.Configuration
@@ -67,10 +64,8 @@ builder.Services.AddSingleton<IMongoClient>(sp =>
     return new MongoClient(settings!.ConnectionString);
 });
 
-// ── MongoDB Context ────────────────────────────────────────────
 builder.Services.AddScoped<MongoDbContext>();
 
-// ── Repositories ───────────────────────────────────────────────
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
@@ -78,19 +73,18 @@ builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICartRepository, CartRepository>();
 
-// ── Application Services ───────────────────────────────────────
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<JwtTokenService>();
+builder.Services.AddScoped<TokenRevocationService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserManagementService>();
 builder.Services.AddScoped<CartComboService>();
 builder.Services.AddScoped<OrderService>();
+builder.Services.AddHttpClient<GeminiRecommendationService>();
 
-// ── Facades ────────────────────────────────────────────────────
 builder.Services.AddScoped<CheckoutFacade>();
 
-// ── JWT Authentication ─────────────────────────────────────────
 var jwtSettings = builder.Configuration
     .GetSection("JwtSettings")
     .Get<JwtSettings>()!;
@@ -118,19 +112,44 @@ builder.Services.AddAuthentication(options =>
 
     options.Events = new JwtBearerEvents
     {
+        OnTokenValidated = async context =>
+        {
+            var userId = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? context.Principal?.FindFirstValue("sub")
+                         ?? context.Principal?.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                context.Fail("Invalid token.");
+                return;
+            }
+
+            var issuedAtValue = context.Principal?.FindFirstValue(JwtRegisteredClaimNames.Iat);
+            if (!long.TryParse(issuedAtValue, out var issuedAtSeconds))
+            {
+                context.Fail("Invalid token.");
+                return;
+            }
+
+            var issuedAtUtc = DateTimeOffset.FromUnixTimeSeconds(issuedAtSeconds).UtcDateTime;
+            var tokenRevocationService = context.HttpContext.RequestServices.GetRequiredService<TokenRevocationService>();
+            var isRevoked = await tokenRevocationService.IsTokenRevokedAsync(userId, issuedAtUtc);
+            if (isRevoked)
+            {
+                context.Fail("Token has been revoked.");
+            }
+        },
         OnChallenge = context =>
         {
             context.HandleResponse();
             context.Response.StatusCode = 401;
             context.Response.ContentType = "application/json";
-            return context.Response.WriteAsync(
-                "{\"message\": \"Bạn cần đăng nhập để truy cập.\"}");
+            return context.Response.WriteAsync("{\"message\": \"Ban can dang nhap de truy cap.\"}");
         },
         OnForbidden = context =>
         {
             context.Response.ContentType = "application/json";
-            return context.Response.WriteAsync(
-                "{\"message\": \"Bạn không có quyền truy cập vào tài nguyên này.\"}");
+            return context.Response.WriteAsync("{\"message\": \"Ban khong co quyen truy cap vao tai nguyen nay.\"}");
         }
     };
 });
@@ -141,10 +160,10 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowReactApp", policy =>
     {
         policy.WithOrigins(
-                "http://localhost:3000",      // Vite default port
-                "http://localhost:5173",      // Vite alternative port
-                "https://localhost:3000",     // HTTPS local
-                "https://localhost:5173"      // HTTPS local alternative
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "https://localhost:3000",
+                "https://localhost:5173"
               )
               .AllowAnyMethod()
               .AllowAnyHeader()
@@ -152,7 +171,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-// ─────────────────────────────────────────────────────────────
 var app = builder.Build();
 
 var enableSwagger = app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled");
@@ -162,13 +180,13 @@ if (enableSwagger)
     app.UseSwaggerUI();
 }
 
-//app.UseHttpsRedirection();
+app.UseStaticFiles();
 
-// Thứ tự quan trọng: Authentication phải trước Authorization
+// app.UseHttpsRedirection();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
 app.Run();
-

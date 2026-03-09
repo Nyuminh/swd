@@ -1,6 +1,6 @@
 using MongoDB.Driver;
-using swd.Infrastructure.Persistence;
 using swd.Domain.Interfaces;
+using swd.Infrastructure.Persistence;
 
 namespace swd.Infrastructure.Repositories
 {
@@ -12,11 +12,6 @@ namespace swd.Infrastructure.Repositories
         {
             _users = context.Database.GetCollection<User>("Users");
         }
-
-        // ── Overrides: fix ObjectId conversion issue từ base Repository ──
-        // Base dùng Builders<T>.Filter.Eq("_id", id) với string thô →
-        // MongoDB không match được ObjectId → không tìm/xóa được.
-        // Typed expression (u => u.Id == id) thì MongoDB driver tự xử lý đúng.
 
         public new async Task<User?> GetByIdAsync(string id)
         {
@@ -118,6 +113,12 @@ namespace swd.Infrastructure.Repositories
             var update = Builders<User>.Update.Set(u => u.Role, newRole);
             await _users.UpdateOneAsync(filter, update);
         }
+
+        public async Task SetTokenInvalidBeforeAsync(string userId, DateTime invalidBeforeUtc)
+        {
+            var filter = Builders<User>.Filter.Eq(u => u.Id, userId);
+            var update = Builders<User>.Update.Set(u => u.TokenInvalidBeforeUtc, invalidBeforeUtc);
+            await _users.UpdateOneAsync(filter, update);
+        }
     }
 }
-

@@ -7,11 +7,16 @@ namespace swd.Application.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly JwtTokenService _jwtTokenService;
+        private readonly TokenRevocationService _tokenRevocationService;
 
-        public AuthService(IUserRepository userRepository, JwtTokenService jwtTokenService)
+        public AuthService(
+            IUserRepository userRepository,
+            JwtTokenService jwtTokenService,
+            TokenRevocationService tokenRevocationService)
         {
             _userRepository = userRepository;
             _jwtTokenService = jwtTokenService;
+            _tokenRevocationService = tokenRevocationService;
         }
 
         public async Task<object> RegisterAsync(RegisterRequest request)
@@ -69,6 +74,11 @@ namespace swd.Application.Services
                     IsEmailVerified = user.IsEmailVerified
                 }
             };
+        }
+
+        public async Task LogoutAsync(string userId)
+        {
+            await _tokenRevocationService.RevokeUserTokensAsync(userId);
         }
 
         public async Task<UserInfo> GetProfileAsync(string userId)

@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace swd.Application.DTOs.Product
 {
     public class UpdateProductRequest
@@ -14,5 +12,7 @@ namespace swd.Application.DTOs.Product
         public int InventoryQuantity { get; set; }
         public List<string>? ImageUrls { get; set; }
         public int WarrantyMonths { get; set; }
+        public FrameDetailsRequest? FrameDetails { get; set; }
+        public LensDetailsRequest? LensDetails { get; set; }
     }
 }

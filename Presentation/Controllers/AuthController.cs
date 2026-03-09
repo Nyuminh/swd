@@ -55,6 +55,28 @@ namespace swd.Presentation.Controllers
             }
         }
 
+        [HttpPost("logout")]
+        [Authorize]
+        public async Task<IActionResult> Logout()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirstValue("sub")
+                         ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "Invalid token." });
+
+            try
+            {
+                await _authService.LogoutAsync(userId);
+                return Ok(new { message = "Logout successful." });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
         [HttpGet("me")]
         [Authorize]
         public async Task<IActionResult> Me()

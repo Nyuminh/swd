@@ -43,11 +43,17 @@ namespace swd.Application.Services
                 {
                     Quantity = request.InventoryQuantity
                 },
-                Images = request.ImageUrls?.Select(url => new ProductImage { Url = url }).ToList() ?? new List<ProductImage>(),
+                Images = MapImages(request.ImageUrls),
                 Warranty = new WarrantyInfo
                 {
                     Months = request.WarrantyMonths
                 },
+                FrameDetails = IsFrameProductType(request.ProductType)
+                    ? MapFrameDetails(request.FrameDetails)
+                    : null,
+                LensDetails = IsLensProductType(request.ProductType)
+                    ? MapLensDetails(request.LensDetails)
+                    : null,
                 CreatedAt = now,
                 UpdatedAt = now
             };
@@ -71,9 +77,20 @@ namespace swd.Application.Services
             product.TargetGender = request.TargetGender;
             product.Inventory = product.Inventory ?? new InventoryInfo();
             product.Inventory.Quantity = request.InventoryQuantity;
-            product.Images = request.ImageUrls?.Select(url => new ProductImage { Url = url }).ToList() ?? new List<ProductImage>();
+
+            if (request.ImageUrls is not null)
+            {
+                product.Images = MapImages(request.ImageUrls);
+            }
+
             product.Warranty = product.Warranty ?? new WarrantyInfo();
             product.Warranty.Months = request.WarrantyMonths;
+            product.FrameDetails = IsFrameProductType(request.ProductType)
+                ? MapFrameDetails(request.FrameDetails)
+                : null;
+            product.LensDetails = IsLensProductType(request.ProductType)
+                ? MapLensDetails(request.LensDetails)
+                : null;
             product.UpdatedAt = DateTime.UtcNow;
 
             await _repo.UpdateAsync(id, product);
@@ -87,6 +104,82 @@ namespace swd.Application.Services
                 throw new KeyNotFoundException($"Product with id '{id}' was not found.");
 
             await _repo.DeleteAsync(id);
+        }
+
+        private static List<ProductImage> MapImages(IEnumerable<string>? imageUrls)
+        {
+            return imageUrls?
+                .Where(url => !string.IsNullOrWhiteSpace(url))
+                .Select(url => new ProductImage { Url = url.Trim() })
+                .ToList() ?? new List<ProductImage>();
+        }
+
+        private static FrameDetails? MapFrameDetails(FrameDetailsRequest? request)
+        {
+            if (request is null)
+                return null;
+
+            var styleTags = request.StyleTags?
+                .Where(tag => !string.IsNullOrWhiteSpace(tag))
+                .Select(tag => tag.Trim())
+                .ToList() ?? new List<string>();
+
+            var frameShape = request.FrameShape?.Trim() ?? string.Empty;
+            var fitType = request.FitType?.Trim() ?? string.Empty;
+            var frameMaterial = request.FrameMaterial?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(frameShape)
+                && string.IsNullOrWhiteSpace(fitType)
+                && string.IsNullOrWhiteSpace(frameMaterial)
+                && styleTags.Count == 0)
+            {
+                return null;
+            }
+
+            return new FrameDetails
+            {
+                FrameShape = frameShape,
+                FitType = fitType,
+                StyleTags = styleTags,
+                FrameMaterial = frameMaterial
+            };
+        }
+
+        private static LensDetails? MapLensDetails(LensDetailsRequest? request)
+        {
+            if (request is null)
+                return null;
+
+            var coatings = request.Coatings?
+                .Where(coating => !string.IsNullOrWhiteSpace(coating))
+                .Select(coating => coating.Trim())
+                .ToList() ?? new List<string>();
+
+            var lensType = request.LensType?.Trim() ?? string.Empty;
+            var index = request.Index?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(lensType)
+                && string.IsNullOrWhiteSpace(index)
+                && coatings.Count == 0)
+            {
+                return null;
+            }
+
+            return new LensDetails
+            {
+                LensType = lensType,
+                Index = index,
+                Coatings = coatings
+            };
+        }
+
+        private static bool IsFrameProductType(string? productType)
+        {
+            return string.Equals(productType, "Frame", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(productType, "Glasses", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsLensProductType(string? productType)
+        {
+            return string.Equals(productType, "Lens", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

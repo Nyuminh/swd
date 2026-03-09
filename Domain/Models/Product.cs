@@ -1,4 +1,4 @@
-﻿using MongoDB.Bson;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 public class Product
@@ -28,6 +28,10 @@ public class Product
 
     public WarrantyInfo Warranty { get; set; }
 
+    public FrameDetails? FrameDetails { get; set; }
+
+    public LensDetails? LensDetails { get; set; }
+
     [BsonRepresentation(BsonType.ObjectId)]
     public string PromotionId { get; set; }
 
@@ -53,4 +57,24 @@ public class WarrantyInfo
     public int Months { get; set; }
 
     public string Description { get; set; }
+}
+
+public class FrameDetails
+{
+    public string FrameShape { get; set; } = string.Empty;
+
+    public string FitType { get; set; } = string.Empty;
+
+    public List<string> StyleTags { get; set; } = new();
+
+    public string FrameMaterial { get; set; } = string.Empty;
+}
+
+public class LensDetails
+{
+    public string LensType { get; set; } = string.Empty;
+
+    public string Index { get; set; } = string.Empty;
+
+    public List<string> Coatings { get; set; } = new();
 }

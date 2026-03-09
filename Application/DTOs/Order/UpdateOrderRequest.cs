@@ -2,7 +2,7 @@
 {
     public class UpdateOrderRequest
     {
-        public string Status { get; set; } // Pending, Shipped, Completed, Cancelled
+        public string? Status { get; set; }
         public UpdateShippingInfo? Shipping { get; set; }
         public UpdatePaymentInfo? Payment { get; set; }
     }

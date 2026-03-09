@@ -1,8 +1,5 @@
-﻿using swd.Domain.Interfaces;
-using swd.Application.DTOs.Order;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Linq;
+﻿using swd.Application.DTOs.Order;
+using swd.Domain.Interfaces;
 
 namespace swd.Application.Services
 {
@@ -42,11 +39,9 @@ namespace swd.Application.Services
             if (existingOrder == null)
                 throw new KeyNotFoundException($"Order with ID {id} not found.");
 
-            // Update order properties
             existingOrder.Status = request.Status ?? existingOrder.Status;
             existingOrder.UpdatedAt = DateTime.UtcNow;
 
-            // Update shipping info if provided
             if (request.Shipping != null && existingOrder.Shipping != null)
             {
                 existingOrder.Shipping.FullName = request.Shipping.FullName ?? existingOrder.Shipping.FullName;
@@ -58,7 +53,6 @@ namespace swd.Application.Services
                 existingOrder.Shipping.DeliveredAt = request.Shipping.DeliveredAt ?? existingOrder.Shipping.DeliveredAt;
             }
 
-            // Update payment info if provided
             if (request.Payment != null && existingOrder.Payment != null)
             {
                 existingOrder.Payment.Method = request.Payment.Method ?? existingOrder.Payment.Method;
@@ -98,9 +92,12 @@ namespace swd.Application.Services
                     FullName = order.Shipping.FullName,
                     Address = order.Shipping.Address,
                     Phone = order.Shipping.Phone,
+                    Carrier = order.Shipping.Carrier,
                     Method = order.Shipping.Method,
                     Fee = order.Shipping.Fee,
-                    Status = order.Shipping.Status
+                    Status = order.Shipping.Status,
+                    ShippedAt = order.Shipping.ShippedAt,
+                    DeliveredAt = order.Shipping.DeliveredAt
                 } : null,
                 Payment = order.Payment != null ? new PaymentInfoDto
                 {

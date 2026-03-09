@@ -1,4 +1,4 @@
-﻿using MongoDB.Bson;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 public class User
@@ -19,15 +19,15 @@ public class User
 
     public string Role { get; set; } = "Customer"; // Admin, Customer
 
-    // ── Email Verification ────────────────────────────────────
     public bool IsEmailVerified { get; set; } = false;
     public string? VerificationCode { get; set; }
     public DateTime? VerificationCodeExpiry { get; set; }
 
-    // ── Password Reset ────────────────────────────────────────
     public string? PasswordResetCode { get; set; }
     public DateTime? PasswordResetCodeExpiry { get; set; }
 
+    // Any token issued at or before this timestamp is rejected.
+    public DateTime? TokenInvalidBeforeUtc { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
-

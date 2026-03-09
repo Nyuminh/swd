@@ -1,7 +1,8 @@
-﻿using swd.Application.DTOs.Order;
-using swd.Domain.Interfaces; // Add this missing namespace
-using swd.Application.Builders;
-namespace swd.Application.Facades // Add this namespace
+﻿using swd.Application.Builders;
+using swd.Application.DTOs.Order;
+using swd.Domain.Interfaces;
+
+namespace swd.Application.Facades
 {
     public class CheckoutFacade
     {
@@ -21,50 +22,70 @@ namespace swd.Application.Facades // Add this namespace
 
         public async Task<CheckoutResponse> PlaceOrder(CheckoutRequest request)
         {
-            var product = await _productRepo.GetByIdAsync(request.ProductId);
+            ArgumentNullException.ThrowIfNull(request);
 
+            if (request.Quantity <= 0)
+                throw new ArgumentException("Quantity must be greater than 0.", nameof(request.Quantity));
+
+            if (string.IsNullOrWhiteSpace(request.UserId))
+                throw new ArgumentException("UserId is required.", nameof(request.UserId));
+
+            if (string.IsNullOrWhiteSpace(request.ProductId))
+                throw new ArgumentException("ProductId is required.", nameof(request.ProductId));
+
+            var product = await _productRepo.GetByIdAsync(request.ProductId);
             if (product == null)
                 throw new ArgumentException("Product not found");
-            
-            if (product.Inventory.Quantity < request.Quantity)
-                throw new InvalidOperationException("Insufficient inventory");
 
             Promotion? promo = null;
             if (!string.IsNullOrEmpty(request.PromotionId))
             {
                 promo = await _promoRepo.GetByIdAsync(request.PromotionId);
-                if (promo == null || promo.Status != "Active" || DateTime.UtcNow < promo.StartAt || DateTime.UtcNow > promo.EndAt)
+                if (promo == null
+                    || !string.Equals(promo.Status, "Active", StringComparison.OrdinalIgnoreCase)
+                    || DateTime.UtcNow < promo.StartAt
+                    || DateTime.UtcNow > promo.EndAt)
+                {
                     throw new ArgumentException("Invalid or expired promotion");
+                }
             }
 
-            var builder = new OrderBuilder()
-                .SetUser(request.UserId)
-                .AddItem(product, request.Quantity)
-                .SetShipping(new ShippingInfo
-                {
-                    Address = "HCM",
-                    Phone = "0909xxx",
-                    Method = "Standard",
-                    Fee = 30000
-                })
-                .SetPayment("COD");
+            var inventoryReserved = await _productRepo.TryReserveInventoryAsync(product.Id, request.Quantity);
+            if (!inventoryReserved)
+                throw new InvalidOperationException("Insufficient inventory");
 
-            if (promo != null)
-                builder.ApplyPromotion(promo);
-
-            var order = builder.Build();
-
-            product.Inventory.Quantity -= request.Quantity;
-            await _productRepo.UpdateAsync(product.Id, product);
-
-            await _orderRepo.CreateAsync(order);
-
-            return new CheckoutResponse
+            try
             {
-                OrderId = order.Id,
-                TotalAmount = order.TotalAmount,
-                Status = order.Status
-            };
+                var builder = new OrderBuilder()
+                    .SetUser(request.UserId)
+                    .AddItem(product, request.Quantity)
+                    .SetShipping(new ShippingInfo
+                    {
+                        Address = "HCM",
+                        Phone = "0909xxx",
+                        Method = "Standard",
+                        Fee = 30000
+                    })
+                    .SetPayment("COD");
+
+                if (promo != null)
+                    builder.ApplyPromotion(promo);
+
+                var order = builder.Build();
+                await _orderRepo.CreateAsync(order);
+
+                return new CheckoutResponse
+                {
+                    OrderId = order.Id,
+                    TotalAmount = order.TotalAmount,
+                    Status = order.Status
+                };
+            }
+            catch
+            {
+                await _productRepo.ReleaseInventoryAsync(product.Id, request.Quantity);
+                throw;
+            }
         }
     }
 }

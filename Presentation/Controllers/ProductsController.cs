@@ -44,23 +44,92 @@ namespace swd.Presentation.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateProductRequest request)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Create(
+            [FromForm] string name,
+            [FromForm] string categoryId,
+            [FromForm] string productType,
+            [FromForm] decimal price,
+            [FromForm] string size,
+            [FromForm] string color,
+            [FromForm] string targetGender,
+            [FromForm] int inventoryQuantity,
+            [FromForm] List<string>? imageUrls,
+            [FromForm] string? frameShape,
+            [FromForm] string? fitType,
+            [FromForm] List<string>? styleTags,
+            [FromForm] string? frameMaterial,
+            [FromForm] string? lensType,
+            [FromForm] string? lensIndex,
+            [FromForm] List<string>? lensCoatings,
+            [FromForm] int warrantyMonths)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
+            var request = new CreateProductRequest
+            {
+                Name = name,
+                CategoryId = categoryId,
+                ProductType = productType,
+                Price = price,
+                Size = size,
+                Color = color,
+                TargetGender = targetGender,
+                InventoryQuantity = inventoryQuantity,
+                ImageUrls = imageUrls,
+                WarrantyMonths = warrantyMonths,
+                FrameDetails = BuildFrameDetailsRequest(frameShape, fitType, styleTags, frameMaterial),
+                LensDetails = BuildLensDetailsRequest(lensType, lensIndex, lensCoatings)
+            };
 
             var product = await _productService.CreateAsync(request);
             return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] UpdateProductRequest request)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Update(
+            string id,
+            [FromForm] string name,
+            [FromForm] string categoryId,
+            [FromForm] string productType,
+            [FromForm] decimal price,
+            [FromForm] string size,
+            [FromForm] string color,
+            [FromForm] string targetGender,
+            [FromForm] int inventoryQuantity,
+            [FromForm] List<string>? imageUrls,
+            [FromForm] string? frameShape,
+            [FromForm] string? fitType,
+            [FromForm] List<string>? styleTags,
+            [FromForm] string? frameMaterial,
+            [FromForm] string? lensType,
+            [FromForm] string? lensIndex,
+            [FromForm] List<string>? lensCoatings,
+            [FromForm] int warrantyMonths)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             try
             {
+                var request = new UpdateProductRequest
+                {
+                    Name = name,
+                    CategoryId = categoryId,
+                    ProductType = productType,
+                    Price = price,
+                    Size = size,
+                    Color = color,
+                    TargetGender = targetGender,
+                    InventoryQuantity = inventoryQuantity,
+                    ImageUrls = imageUrls,
+                    WarrantyMonths = warrantyMonths,
+                    FrameDetails = BuildFrameDetailsRequest(frameShape, fitType, styleTags, frameMaterial),
+                    LensDetails = BuildLensDetailsRequest(lensType, lensIndex, lensCoatings)
+                };
+
                 var product = await _productService.UpdateAsync(id, request);
                 return Ok(product);
             }
@@ -82,6 +151,59 @@ namespace swd.Presentation.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
+        }
+
+        private static FrameDetailsRequest? BuildFrameDetailsRequest(
+            string? frameShape,
+            string? fitType,
+            List<string>? styleTags,
+            string? frameMaterial)
+        {
+            var normalizedStyleTags = styleTags?
+                .Where(tag => !string.IsNullOrWhiteSpace(tag))
+                .Select(tag => tag.Trim())
+                .ToList();
+
+            if (string.IsNullOrWhiteSpace(frameShape)
+                && string.IsNullOrWhiteSpace(fitType)
+                && string.IsNullOrWhiteSpace(frameMaterial)
+                && (normalizedStyleTags is null || normalizedStyleTags.Count == 0))
+            {
+                return null;
+            }
+
+            return new FrameDetailsRequest
+            {
+                FrameShape = frameShape,
+                FitType = fitType,
+                StyleTags = normalizedStyleTags,
+                FrameMaterial = frameMaterial
+            };
+        }
+
+        private static LensDetailsRequest? BuildLensDetailsRequest(
+            string? lensType,
+            string? lensIndex,
+            List<string>? lensCoatings)
+        {
+            var normalizedCoatings = lensCoatings?
+                .Where(coating => !string.IsNullOrWhiteSpace(coating))
+                .Select(coating => coating.Trim())
+                .ToList();
+
+            if (string.IsNullOrWhiteSpace(lensType)
+                && string.IsNullOrWhiteSpace(lensIndex)
+                && (normalizedCoatings is null || normalizedCoatings.Count == 0))
+            {
+                return null;
+            }
+
+            return new LensDetailsRequest
+            {
+                LensType = lensType,
+                Index = lensIndex,
+                Coatings = normalizedCoatings
+            };
         }
     }
 }
