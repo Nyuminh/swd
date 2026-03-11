@@ -2,6 +2,13 @@ using System.Text.Json.Serialization;
 
 namespace swd.Application.DTOs.Ai
 {
+    public class GlassesRecommendationRequest
+    {
+        public IFormFile? Portrait { get; set; }
+
+        public int? MaxRecommendations { get; set; }
+    }
+
     public class GlassesRecommendationResponse
     {
         [JsonPropertyName("analysis")]
@@ -152,3 +159,4 @@ namespace swd.Application.DTOs.Ai
         public string Reason { get; set; } = string.Empty;
     }
 }
+

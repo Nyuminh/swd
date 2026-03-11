@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using swd.Application.DTOs.Category;
 using swd.Application.Services;
@@ -37,6 +38,7 @@ namespace swd.Presentation.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> Create([FromBody] CreateCategoryRequest request)
         {
             if (!ModelState.IsValid)
@@ -47,6 +49,7 @@ namespace swd.Presentation.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> Update(string id, [FromBody] UpdateCategoryRequest request)
         {
             if (!ModelState.IsValid)
@@ -64,6 +67,7 @@ namespace swd.Presentation.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> Delete(string id)
         {
             try

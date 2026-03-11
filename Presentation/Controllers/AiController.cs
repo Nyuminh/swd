@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using swd.Application.DTOs.Ai;
 using swd.Application.Services;
 
 namespace swd.Presentation.Controllers
@@ -17,25 +18,26 @@ namespace swd.Presentation.Controllers
 
         [HttpPost("glasses-recommendations")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> RecommendGlasses(
-            [FromForm] IFormFile portrait,
-            [FromForm] int? maxRecommendations)
+        public async Task<IActionResult> RecommendGlasses([FromForm] GlassesRecommendationRequest request)
         {
-            if (portrait is null || portrait.Length == 0)
+            if (request.Portrait is null || request.Portrait.Length == 0)
                 return BadRequest(new { message = "Portrait image is required." });
 
-            if (string.IsNullOrWhiteSpace(portrait.ContentType) || !portrait.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(request.Portrait.ContentType)
+                || !request.Portrait.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            {
                 return BadRequest(new { message = "Portrait file must be an image." });
+            }
 
             try
             {
                 await using var memoryStream = new MemoryStream();
-                await portrait.CopyToAsync(memoryStream, HttpContext.RequestAborted);
+                await request.Portrait.CopyToAsync(memoryStream, HttpContext.RequestAborted);
 
                 var response = await _geminiRecommendationService.RecommendAsync(
                     memoryStream.ToArray(),
-                    portrait.ContentType,
-                    maxRecommendations,
+                    request.Portrait.ContentType,
+                    request.MaxRecommendations,
                     HttpContext.RequestAborted);
 
                 return Ok(response);

@@ -1,5 +1,9 @@
-﻿using System.Reflection;
+using System.Reflection;
+using System.Text;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.FileProviders;
 using swd.Application.DTOs.Product;
 using swd.Application.Services;
 using swd.Domain.Interfaces;
@@ -9,6 +13,24 @@ namespace swd.Tests;
 
 public class ProductUploadApiTests
 {
+    [Fact]
+    public void ProductMultipartFormRequest_ShouldExposeImageFilesCollection()
+    {
+        var property = typeof(ProductMultipartFormRequest).GetProperty(nameof(ProductMultipartFormRequest.ImageFiles));
+
+        Assert.NotNull(property);
+        Assert.Equal(typeof(List<IFormFile>), property!.PropertyType);
+    }
+
+    [Fact]
+    public void ProductMultipartFormRequest_ShouldExposeLensCoatingsCollection()
+    {
+        var property = typeof(ProductMultipartFormRequest).GetProperty(nameof(ProductMultipartFormRequest.LensCoatings));
+
+        Assert.NotNull(property);
+        Assert.Equal(typeof(List<string>), property!.PropertyType);
+    }
+
     [Fact]
     public void CreateProductRequest_ShouldNotExposeImageFilesCollection()
     {
@@ -50,37 +72,144 @@ public class ProductUploadApiTests
     }
 
     [Fact]
-    public void ProductsController_Create_ShouldExposeUrlOnlyFormTextboxParameters()
+    public void ProductsController_Create_ShouldAcceptMultipartRequestModel()
     {
         var method = typeof(ProductsController).GetMethod(nameof(ProductsController.Create));
         var parameters = method!.GetParameters();
 
-        Assert.DoesNotContain(parameters, x => x.ParameterType == typeof(CreateProductRequest));
-        Assert.Contains(parameters, x => x.Name == "name" && x.ParameterType == typeof(string) && x.GetCustomAttribute<FromFormAttribute>() != null);
-        Assert.Contains(parameters, x => x.Name == "imageUrls" && x.ParameterType == typeof(List<string>) && x.GetCustomAttribute<FromFormAttribute>() != null);
-        Assert.Contains(parameters, x => x.Name == "frameShape" && x.ParameterType == typeof(string) && x.GetCustomAttribute<FromFormAttribute>() != null);
-        Assert.Contains(parameters, x => x.Name == "styleTags" && x.ParameterType == typeof(List<string>) && x.GetCustomAttribute<FromFormAttribute>() != null);
-        Assert.Contains(parameters, x => x.Name == "lensType" && x.ParameterType == typeof(string) && x.GetCustomAttribute<FromFormAttribute>() != null);
-        Assert.Contains(parameters, x => x.Name == "lensCoatings" && x.ParameterType == typeof(List<string>) && x.GetCustomAttribute<FromFormAttribute>() != null);
-        Assert.DoesNotContain(parameters, x => x.Name == "imageFiles");
+        Assert.Single(parameters);
+        Assert.Equal(typeof(ProductMultipartFormRequest), parameters[0].ParameterType);
+        Assert.NotNull(parameters[0].GetCustomAttribute<FromFormAttribute>());
     }
 
     [Fact]
-    public void ProductsController_Update_ShouldExposeUrlOnlyFormTextboxParameters()
+    public void ProductsController_Update_ShouldAcceptRouteIdAndMultipartRequestModel()
     {
         var method = typeof(ProductsController).GetMethod(nameof(ProductsController.Update));
         var parameters = method!.GetParameters();
 
-        Assert.DoesNotContain(parameters, x => x.ParameterType == typeof(UpdateProductRequest));
-        Assert.Contains(parameters, x => x.Name == "name" && x.ParameterType == typeof(string) && x.GetCustomAttribute<FromFormAttribute>() != null);
-        Assert.Contains(parameters, x => x.Name == "imageUrls" && x.ParameterType == typeof(List<string>) && x.GetCustomAttribute<FromFormAttribute>() != null);
-        Assert.Contains(parameters, x => x.Name == "frameShape" && x.ParameterType == typeof(string) && x.GetCustomAttribute<FromFormAttribute>() != null);
-        Assert.Contains(parameters, x => x.Name == "styleTags" && x.ParameterType == typeof(List<string>) && x.GetCustomAttribute<FromFormAttribute>() != null);
-        Assert.Contains(parameters, x => x.Name == "lensType" && x.ParameterType == typeof(string) && x.GetCustomAttribute<FromFormAttribute>() != null);
-        Assert.Contains(parameters, x => x.Name == "lensCoatings" && x.ParameterType == typeof(List<string>) && x.GetCustomAttribute<FromFormAttribute>() != null);
-        Assert.DoesNotContain(parameters, x => x.Name == "imageFiles");
+        Assert.Equal(2, parameters.Length);
+        Assert.Equal(typeof(string), parameters[0].ParameterType);
+        Assert.Equal(typeof(ProductMultipartFormRequest), parameters[1].ParameterType);
+        Assert.NotNull(parameters[1].GetCustomAttribute<FromFormAttribute>());
     }
 
+    [Fact]
+    public async Task Create_ShouldPersistUploadedImages_WhenImageFilesProvided()
+    {
+        var tempRoot = Path.Combine(Path.GetTempPath(), $"swd-product-upload-tests-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempRoot);
+
+        try
+        {
+            var repository = new InMemoryProductRepository();
+            var service = new ProductService(repository);
+            var controller = new ProductsController(service, new FakeWebHostEnvironment(tempRoot))
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext()
+                }
+            };
+
+            var result = await controller.Create(new ProductMultipartFormRequest
+            {
+                Name = "Classic Round",
+                CategoryId = "category-1",
+                ProductType = "Frame",
+                Price = 120m,
+                Size = "M",
+                Color = "Black",
+                TargetGender = "Unisex",
+                InventoryQuantity = 8,
+                ImageFiles = new List<IFormFile>
+                {
+                    CreateImageFormFile("frame.jpg", "image/jpeg", "fake-image")
+                },
+                WarrantyMonths = 12,
+                FrameShape = "round",
+                FitType = "regular",
+                StyleTags = new List<string> { "classic", "minimal" },
+                FrameMaterial = "metal",
+                LensType = "single-vision",
+                LensIndex = "1.60",
+                LensCoatings = new List<string> { "anti-glare" }
+            });
+
+            var createdResult = Assert.IsType<CreatedAtActionResult>(result);
+            var product = Assert.IsType<Product>(createdResult.Value);
+
+            Assert.Single(product.Images);
+            Assert.StartsWith("/uploads/products/", product.Images[0].Url);
+
+            var relativePath = product.Images[0].Url.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+            var savedFilePath = Path.Combine(tempRoot, "wwwroot", relativePath);
+            Assert.True(File.Exists(savedFilePath));
+        }
+        finally
+        {
+            if (Directory.Exists(tempRoot))
+            {
+                Directory.Delete(tempRoot, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Create_ShouldPersistUploadedImages_WhenProductTypeIsLens()
+    {
+        var tempRoot = Path.Combine(Path.GetTempPath(), $"swd-product-upload-tests-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempRoot);
+
+        try
+        {
+            var repository = new InMemoryProductRepository();
+            var service = new ProductService(repository);
+            var controller = new ProductsController(service, new FakeWebHostEnvironment(tempRoot))
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext()
+                }
+            };
+
+            var result = await controller.Create(new ProductMultipartFormRequest
+            {
+                Name = "Blue Light Lens",
+                CategoryId = "category-1",
+                ProductType = "Lens",
+                Price = 90m,
+                Size = "M",
+                Color = "Clear",
+                TargetGender = "Unisex",
+                InventoryQuantity = 10,
+                ImageFiles = new List<IFormFile>
+                {
+                    CreateImageFormFile("lens.jpg", "image/jpeg", "fake-lens-image")
+                },
+                WarrantyMonths = 12,
+                LensType = "blue-light",
+                LensIndex = "1.56",
+                LensCoatings = new List<string> { "uv", "blue-light" }
+            });
+
+            var createdResult = Assert.IsType<CreatedAtActionResult>(result);
+            var product = Assert.IsType<Product>(createdResult.Value);
+
+            Assert.Single(product.Images);
+            Assert.StartsWith("/uploads/products/", product.Images[0].Url);
+            Assert.NotNull(product.LensDetails);
+            Assert.Equal(new[] { "uv", "blue-light" }, product.LensDetails!.Coatings);
+            Assert.Null(product.FrameDetails);
+        }
+        finally
+        {
+            if (Directory.Exists(tempRoot))
+            {
+                Directory.Delete(tempRoot, recursive: true);
+            }
+        }
+    }
     [Fact]
     public async Task CreateAsync_ShouldMapFrameDetails_WhenProductTypeIsFrame()
     {
@@ -302,6 +431,42 @@ public class ProductUploadApiTests
 
             return Task.CompletedTask;
         }
+    }
+
+    private static IFormFile CreateImageFormFile(string fileName, string contentType, string content)
+    {
+        var bytes = Encoding.UTF8.GetBytes(content);
+        var stream = new MemoryStream(bytes);
+        return new FormFile(stream, 0, bytes.Length, "imageFiles", fileName)
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = contentType
+        };
+    }
+
+    private sealed class FakeWebHostEnvironment : IWebHostEnvironment
+    {
+        public FakeWebHostEnvironment(string contentRootPath)
+        {
+            ContentRootPath = contentRootPath;
+            ContentRootFileProvider = new NullFileProvider();
+            WebRootPath = Path.Combine(contentRootPath, "wwwroot");
+            WebRootFileProvider = new NullFileProvider();
+            ApplicationName = "swd.Tests";
+            EnvironmentName = "Development";
+        }
+
+        public string ApplicationName { get; set; }
+
+        public IFileProvider WebRootFileProvider { get; set; }
+
+        public string WebRootPath { get; set; }
+
+        public string EnvironmentName { get; set; }
+
+        public string ContentRootPath { get; set; }
+
+        public IFileProvider ContentRootFileProvider { get; set; }
     }
 }
 

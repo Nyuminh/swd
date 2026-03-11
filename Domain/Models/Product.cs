@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -34,6 +35,10 @@ public class Product
 
     [BsonRepresentation(BsonType.ObjectId)]
     public string PromotionId { get; set; }
+
+    [BsonExtraElements]
+    [JsonIgnore]
+    public BsonDocument? ExtraElements { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

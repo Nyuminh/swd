@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
@@ -410,10 +410,7 @@ namespace swd.Application.Services
                         ProductName = product.Name,
                         ProductType = product.ProductType,
                         Price = product.Price,
-                        ImageUrls = product.Images?
-                            .Where(image => !string.IsNullOrWhiteSpace(image.Url))
-                            .Select(image => image.Url.Trim())
-                            .ToList() ?? new List<string>(),
+                        ImageUrls = ProductImageUrlResolver.GetImageUrls(product),
                         FrameStyle = NormalizeUnknown(item.FrameStyle),
                         FrameShape = NormalizeUnknown(item.FrameShape, product.FrameDetails?.FrameShape),
                         WhySuitsYou = NormalizeNarrative(item.WhySuitsYou),
@@ -687,5 +684,6 @@ namespace swd.Application.Services
         }
     }
 }
+
 
 
