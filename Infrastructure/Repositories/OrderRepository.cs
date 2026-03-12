@@ -1,4 +1,4 @@
-﻿using MongoDB.Driver;
+using MongoDB.Driver;
 using swd.Infrastructure.Persistence;
 using swd.Domain.Interfaces;
 
@@ -30,5 +30,8 @@ namespace swd.Infrastructure.Repositories
 
         public async Task<List<Order>> GetByUserAsync(string userId) =>
             await _collection.Find(o => o.UserId == userId).ToListAsync();
+
+        public async Task<List<Order>> GetByStatusAsync(string status) =>
+            await _collection.Find(o => o.Status == status).ToListAsync();
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Reflection;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
@@ -354,6 +354,11 @@ public class OrderApiTests
         public Task<List<Order>> GetByUserAsync(string userId)
         {
             return Task.FromResult(_orders.Where(x => x.UserId == userId).ToList());
+        }
+
+        public Task<List<Order>> GetByStatusAsync(string status)
+        {
+            return Task.FromResult(_orders.Where(x => x.Status == status).ToList());
         }
     }
 

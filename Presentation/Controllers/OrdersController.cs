@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -55,6 +55,14 @@ namespace swd.Presentation.Controllers
         {
             var orders = await _orderService.GetAllOrdersAsync();
             return Ok(new { total = orders.Count, data = orders });
+        }
+
+        [HttpGet("revenue")]
+        [Authorize(Roles = "Admin,Staff")]
+        public async Task<IActionResult> GetRevenueSummary()
+        {
+            var summary = await _orderService.GetRevenueSummaryAsync();
+            return Ok(summary);
         }
 
         [HttpGet("{id}")]

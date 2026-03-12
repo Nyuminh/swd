@@ -1,4 +1,4 @@
-﻿using swd.Application.DTOs.Order;
+using swd.Application.DTOs.Order;
 using swd.Domain.Interfaces;
 
 namespace swd.Application.Services
@@ -71,6 +71,35 @@ namespace swd.Application.Services
                 throw new KeyNotFoundException($"Order with ID {id} not found.");
 
             await _orderRepository.DeleteAsync(id);
+        }
+
+        public async Task<swd.Application.DTOs.Dashboard.RevenueDashboardResponse> GetRevenueSummaryAsync()
+        {
+            // Usually, only count Completed or Delivered orders as realized revenue.
+            var completedOrders = await _orderRepository.GetByStatusAsync("Completed");
+
+            var totalRevenue = completedOrders.Sum(o => o.TotalAmount);
+            var totalOrders = completedOrders.Count;
+
+            // Group by month, e.g., "YYYY-MM"
+            var revenueByMonth = completedOrders
+                .Where(o => o.CreatedAt != default) // fallback sanity check
+                .GroupBy(o => o.CreatedAt.ToString("yyyy-MM"))
+                .Select(g => new swd.Application.DTOs.Dashboard.MonthlyRevenueDto
+                {
+                    Month = g.Key,
+                    Revenue = g.Sum(o => o.TotalAmount),
+                    OrderCount = g.Count()
+                })
+                .OrderBy(x => x.Month)
+                .ToList();
+
+            return new swd.Application.DTOs.Dashboard.RevenueDashboardResponse
+            {
+                TotalRevenue = totalRevenue,
+                TotalOrders = totalOrders,
+                RevenueByMonth = revenueByMonth
+            };
         }
 
         private static GetOrderResponse MapToResponse(Order order)
