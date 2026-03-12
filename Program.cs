@@ -80,6 +80,7 @@ builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<TokenRevocationService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserManagementService>();
+builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<CartComboService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddHttpClient<GeminiRecommendationService>();
