@@ -31,7 +31,7 @@ namespace swd.Application.Services
             var user = new User
             {
                 Username = request.Username,
-                Email = string.Empty,
+                Email = request.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 Phone = request.Phone ?? string.Empty,
                 Address = request.Address ?? string.Empty,
@@ -71,7 +71,9 @@ namespace swd.Application.Services
                     Username = user.Username,
                     Email = user.Email,
                     Role = user.Role,
-                    IsEmailVerified = user.IsEmailVerified
+                    IsEmailVerified = user.IsEmailVerified,
+                    Phone = user.Phone ?? string.Empty,
+                    Address = user.Address ?? string.Empty
                 }
             };
         }
@@ -93,7 +95,9 @@ namespace swd.Application.Services
                 Username = user.Username,
                 Email = user.Email,
                 Role = user.Role,
-                IsEmailVerified = user.IsEmailVerified
+                IsEmailVerified = user.IsEmailVerified,
+                Phone = user.Phone ?? string.Empty,
+                Address = user.Address ?? string.Empty
             };
         }
 

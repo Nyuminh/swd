@@ -18,6 +18,10 @@ namespace swd.Application.DTOs.Auth
 
         public string? Phone { get; set; }
         public string? Address { get; set; }
+        
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Invalid email format")]
+        public string Email { get; set; } = string.Empty;
     }
 
     public class LoginRequest
@@ -58,5 +62,7 @@ namespace swd.Application.DTOs.Auth
         public string Email { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         public bool IsEmailVerified { get; set; }
+        public string Phone { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
     }
 }
