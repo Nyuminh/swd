@@ -68,6 +68,8 @@ namespace swd.Application.Services
                 existingOrder.Payment.PaidAt = request.Payment.PaidAt ?? existingOrder.Payment.PaidAt;
             }
 
+            ApplyCashOnDeliveryCompletion(existingOrder);
+
             await _orderRepository.UpdateAsync(id, existingOrder);
             return MapToResponse(existingOrder);
         }
@@ -199,6 +201,12 @@ namespace swd.Application.Services
                     FailureReason = order.Payment.FailureReason,
                     PaidAt = order.Payment.PaidAt
                 } : null,
+                Prescription = order.Prescription != null ? new PrescriptionInfoDto
+                {
+                    LeftEye = order.Prescription.LeftEye,
+                    RightEye = order.Prescription.RightEye,
+                    Describe = order.Prescription.Describe
+                } : null,
                 Promotion = order.Promotion != null ? new PromotionSnapshotDto
                 {
                     PromotionId = order.Promotion.PromotionId,
@@ -223,6 +231,22 @@ namespace swd.Application.Services
                 || string.Equals(order.Payment.Method, "Cash on Delivery", StringComparison.OrdinalIgnoreCase);
         }
 
+        private static void ApplyCashOnDeliveryCompletion(Order order)
+        {
+            if (!IsCashOnDelivery(order.Payment))
+                return;
+
+            if (string.Equals(order.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            if (!string.Equals(order.Shipping?.Status, "Delivered", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            order.Payment!.Status = "Paid";
+            order.Payment.PaidAt ??= order.Shipping.DeliveredAt ?? DateTime.UtcNow;
+            order.Status = "Completed";
+        }
+
         private static bool ShouldReleaseInventory(Order order, string nextStatus)
         {
             return CanReleaseInventory(order)
@@ -236,6 +260,16 @@ namespace swd.Application.Services
 
             return !string.Equals(order.Status, "Shipped", StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(order.Status, "Completed", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsCashOnDelivery(PaymentInfo? payment)
+        {
+            if (payment == null)
+                return false;
+
+            return string.Equals(payment.OptionId, "payment-cod", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(payment.Method, "COD", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(payment.Method, "Cash on Delivery", StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task ReleaseInventoryAsync(Order order)

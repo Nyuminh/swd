@@ -7,6 +7,7 @@
         public List<OrderItemDto> Items { get; set; } = new();
         public ShippingInfoDto? Shipping { get; set; }
         public PaymentInfoDto? Payment { get; set; }
+        public PrescriptionInfoDto? Prescription { get; set; }
         public PromotionSnapshotDto? Promotion { get; set; }
         public string Status { get; set; } = string.Empty;
         public decimal TotalAmount { get; set; }
@@ -45,6 +46,13 @@
         public string TransactionReference { get; set; } = string.Empty;
         public string FailureReason { get; set; } = string.Empty;
         public DateTime? PaidAt { get; set; }
+    }
+
+    public class PrescriptionInfoDto
+    {
+        public string LeftEye { get; set; } = string.Empty;
+        public string RightEye { get; set; } = string.Empty;
+        public string Describe { get; set; } = string.Empty;
     }
 
     public class PromotionSnapshotDto
