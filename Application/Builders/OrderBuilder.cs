@@ -1,4 +1,4 @@
-﻿namespace swd.Application.Builders
+namespace swd.Application.Builders
 {
     public class OrderBuilder
     {
@@ -53,6 +53,12 @@
                 Method = method,
                 Status = "Pending"
             };
+            return this;
+        }
+
+        public OrderBuilder SetPrescription(PrescriptionInfo prescription)
+        {
+            _order.Prescription = prescription;
             return this;
         }
 

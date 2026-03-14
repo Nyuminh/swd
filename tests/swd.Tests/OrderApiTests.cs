@@ -51,7 +51,9 @@ public class OrderApiTests
             Items = new List<CheckoutItemRequest>
             {
                 new() { ProductId = "product-1", Quantity = 0 }
-            }
+            },
+            Shipping = new CheckoutShippingRequest { FullName = "Test", Address = "Test", Phone = "0909" },
+            PaymentMethod = "COD"
         }));
 
         Assert.Contains("Quantity", exception.Message, StringComparison.OrdinalIgnoreCase);
@@ -80,7 +82,9 @@ public class OrderApiTests
             Items = new List<CheckoutItemRequest>
             {
                 new() { ProductId = "product-2", Quantity = 2 }
-            }
+            },
+            Shipping = new CheckoutShippingRequest { FullName = "Test", Address = "Test", Phone = "0909" },
+            PaymentMethod = "COD"
         }));
 
         var product = await productRepository.GetByIdAsync("product-2");
@@ -114,7 +118,9 @@ public class OrderApiTests
             Items = new List<CheckoutItemRequest>
             {
                 new() { ProductId = "product-3", Quantity = 1 }
-            }
+            },
+            Shipping = new CheckoutShippingRequest { FullName = "Test", Address = "Test", Phone = "0909" },
+            PaymentMethod = "COD"
         });
 
         Assert.IsType<OkObjectResult>(result);

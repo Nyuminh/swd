@@ -79,12 +79,24 @@ namespace swd.Application.Facades
                     .SetUser(request.UserId)
                     .SetShipping(new ShippingInfo
                     {
-                        Address = "HCM",
-                        Phone = "0909xxx",
-                        Method = "Standard",
-                        Fee = 30000
+                        FullName = request.Shipping.FullName,
+                        Address = request.Shipping.Address,
+                        Phone = request.Shipping.Phone,
+                        Method = request.Shipping.Method,
+                        Fee = 30000, // Fixed fee for now or could be calculated
+                        Status = "Pending"
                     })
-                    .SetPayment("COD");
+                    .SetPayment(request.PaymentMethod);
+
+                if (request.Prescription != null)
+                {
+                    builder.SetPrescription(new PrescriptionInfo
+                    {
+                        LeftEye = request.Prescription.LeftEye ?? "",
+                        RightEye = request.Prescription.RightEye ?? "",
+                        Describe = request.Prescription.Describe ?? ""
+                    });
+                }
 
                 foreach (var rp in reservedProducts)
                 {
