@@ -1,4 +1,4 @@
-﻿using swd.Application.Builders;
+using swd.Application.Builders;
 using swd.Application.DTOs.Order;
 using swd.Domain.Interfaces;
 
@@ -24,18 +24,40 @@ namespace swd.Application.Facades
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            if (request.Quantity <= 0)
-                throw new ArgumentException("Quantity must be greater than 0.", nameof(request.Quantity));
-
             if (string.IsNullOrWhiteSpace(request.UserId))
                 throw new ArgumentException("UserId is required.", nameof(request.UserId));
 
-            if (string.IsNullOrWhiteSpace(request.ProductId))
-                throw new ArgumentException("ProductId is required.", nameof(request.ProductId));
+            if (request.Items == null || request.Items.Count == 0)
+                throw new ArgumentException("At least one item is required.", nameof(request.Items));
 
-            var product = await _productRepo.GetByIdAsync(request.ProductId);
-            if (product == null)
-                throw new ArgumentException("Product not found");
+            foreach (var item in request.Items)
+            {
+                if (string.IsNullOrWhiteSpace(item.ProductId))
+                    throw new ArgumentException("ProductId is required for all items.");
+                if (item.Quantity <= 0)
+                    throw new ArgumentException($"Quantity must be greater than 0 for product {item.ProductId}.");
+            }
+
+            var reservedProducts = new System.Collections.Generic.List<(Product Product, int Quantity)>();
+
+            foreach (var item in request.Items)
+            {
+                var product = await _productRepo.GetByIdAsync(item.ProductId);
+                if (product == null)
+                {
+                    await RollbackInventory(reservedProducts);
+                    throw new ArgumentException($"Product {item.ProductId} not found");
+                }
+
+                var inventoryReserved = await _productRepo.TryReserveInventoryAsync(product.Id, item.Quantity);
+                if (!inventoryReserved)
+                {
+                    await RollbackInventory(reservedProducts);
+                    throw new InvalidOperationException($"Insufficient inventory for product {product.Id}");
+                }
+
+                reservedProducts.Add((product, item.Quantity));
+            }
 
             Promotion? promo = null;
             if (!string.IsNullOrEmpty(request.PromotionId))
@@ -46,19 +68,15 @@ namespace swd.Application.Facades
                     || DateTime.UtcNow < promo.StartAt
                     || DateTime.UtcNow > promo.EndAt)
                 {
+                    await RollbackInventory(reservedProducts);
                     throw new ArgumentException("Invalid or expired promotion");
                 }
             }
-
-            var inventoryReserved = await _productRepo.TryReserveInventoryAsync(product.Id, request.Quantity);
-            if (!inventoryReserved)
-                throw new InvalidOperationException("Insufficient inventory");
 
             try
             {
                 var builder = new OrderBuilder()
                     .SetUser(request.UserId)
-                    .AddItem(product, request.Quantity)
                     .SetShipping(new ShippingInfo
                     {
                         Address = "HCM",
@@ -67,6 +85,11 @@ namespace swd.Application.Facades
                         Fee = 30000
                     })
                     .SetPayment("COD");
+
+                foreach (var rp in reservedProducts)
+                {
+                    builder.AddItem(rp.Product, rp.Quantity);
+                }
 
                 if (promo != null)
                     builder.ApplyPromotion(promo);
@@ -83,8 +106,16 @@ namespace swd.Application.Facades
             }
             catch
             {
-                await _productRepo.ReleaseInventoryAsync(product.Id, request.Quantity);
+                await RollbackInventory(reservedProducts);
                 throw;
+            }
+        }
+
+        private async Task RollbackInventory(System.Collections.Generic.List<(Product Product, int Quantity)> reservedProducts)
+        {
+            foreach (var rp in reservedProducts)
+            {
+                await _productRepo.ReleaseInventoryAsync(rp.Product.Id, rp.Quantity);
             }
         }
     }

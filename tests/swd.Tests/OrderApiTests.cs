@@ -48,8 +48,10 @@ public class OrderApiTests
         var exception = await Assert.ThrowsAsync<ArgumentException>(() => facade.PlaceOrder(new CheckoutRequest
         {
             UserId = "user-1",
-            ProductId = "product-1",
-            Quantity = 0
+            Items = new List<CheckoutItemRequest>
+            {
+                new() { ProductId = "product-1", Quantity = 0 }
+            }
         }));
 
         Assert.Contains("Quantity", exception.Message, StringComparison.OrdinalIgnoreCase);
@@ -75,8 +77,10 @@ public class OrderApiTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => facade.PlaceOrder(new CheckoutRequest
         {
             UserId = "user-1",
-            ProductId = "product-2",
-            Quantity = 2
+            Items = new List<CheckoutItemRequest>
+            {
+                new() { ProductId = "product-2", Quantity = 2 }
+            }
         }));
 
         var product = await productRepository.GetByIdAsync("product-2");
@@ -107,8 +111,10 @@ public class OrderApiTests
         var result = await controller.Checkout(new CheckoutRequest
         {
             UserId = "body-user",
-            ProductId = "product-3",
-            Quantity = 1
+            Items = new List<CheckoutItemRequest>
+            {
+                new() { ProductId = "product-3", Quantity = 1 }
+            }
         });
 
         Assert.IsType<OkObjectResult>(result);
