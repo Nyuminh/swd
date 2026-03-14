@@ -15,6 +15,12 @@ namespace swd.Application.Builders
             return this;
         }
 
+        public OrderBuilder SetIdempotencyKey(string idempotencyKey)
+        {
+            _order.IdempotencyKey = idempotencyKey;
+            return this;
+        }
+
         public OrderBuilder AddItem(Product product, int quantity)
         {
             _order.Items.Add(new OrderItem
@@ -46,13 +52,21 @@ namespace swd.Application.Builders
             return this;
         }
 
-        public OrderBuilder SetPayment(string method)
+        public OrderBuilder SetPayment(string method, string provider = "", string optionId = "", string status = "Pending")
         {
             _order.Payment = new PaymentInfo
             {
                 Method = method,
-                Status = "Pending"
+                Provider = provider,
+                OptionId = optionId,
+                Status = status
             };
+            return this;
+        }
+
+        public OrderBuilder SetStatus(string status)
+        {
+            _order.Status = status;
             return this;
         }
 

@@ -35,13 +35,21 @@ namespace swd.Application.DTOs.Order
         public string? UserId { get; set; }
 
         [Required]
+        public string IdempotencyKey { get; set; } = string.Empty;
+
+        [Required]
         public List<CheckoutItemRequest> Items { get; set; } = new List<CheckoutItemRequest>();
+
+        [Required]
+        public string ShippingOptionId { get; set; } = string.Empty;
+
+        [Required]
+        public string PaymentOptionId { get; set; } = string.Empty;
 
         [Required]
         public CheckoutShippingRequest Shipping { get; set; } = new();
 
-        [Required]
-        public string PaymentMethod { get; set; } = "COD";
+        public string? PaymentMethod { get; set; }
 
         public CheckoutPrescriptionRequest? Prescription { get; set; }
 

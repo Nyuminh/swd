@@ -39,7 +39,11 @@
     public class PaymentInfoDto
     {
         public string Method { get; set; } = string.Empty;
+        public string Provider { get; set; } = string.Empty;
+        public string OptionId { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
+        public string TransactionReference { get; set; } = string.Empty;
+        public string FailureReason { get; set; } = string.Empty;
         public DateTime? PaidAt { get; set; }
     }
 

@@ -15,11 +15,23 @@ namespace swd.Presentation.Controllers
     {
         private readonly CheckoutFacade _checkoutFacade;
         private readonly OrderService _orderService;
+        private readonly CheckoutCatalogService _checkoutCatalogService;
 
-        public OrdersController(CheckoutFacade checkoutFacade, OrderService orderService)
+        public OrdersController(
+            CheckoutFacade checkoutFacade,
+            OrderService orderService,
+            CheckoutCatalogService checkoutCatalogService)
         {
             _checkoutFacade = checkoutFacade;
             _orderService = orderService;
+            _checkoutCatalogService = checkoutCatalogService;
+        }
+
+        [HttpGet("checkout/options")]
+        public async Task<IActionResult> GetCheckoutOptions()
+        {
+            var response = await _checkoutCatalogService.GetActiveOptionsAsync();
+            return Ok(response);
         }
 
         [HttpPost("checkout")]
@@ -46,6 +58,32 @@ namespace swd.Presentation.Controllers
             catch (InvalidOperationException ex)
             {
                 return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("{id}/payments/demo-confirm")]
+        public async Task<IActionResult> ConfirmDemoPayment(string id, [FromBody] ConfirmDemoPaymentRequest request)
+        {
+            try
+            {
+                var order = await _orderService.GetOrderByIdAsync(id);
+                if (!CanAccessUserOrders(order.UserId))
+                    return Forbid();
+
+                var response = await _orderService.ConfirmDemoPaymentAsync(id, request);
+                return Ok(response);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
             }
         }
 
@@ -111,11 +149,14 @@ namespace swd.Presentation.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> DeleteOrder(string id)
         {
             try
             {
+                var order = await _orderService.GetOrderByIdAsync(id);
+                if (!CanAccessUserOrders(order.UserId))
+                    return Forbid();
+
                 await _orderService.DeleteOrderAsync(id);
                 return Ok(new { message = "Order deleted successfully." });
             }

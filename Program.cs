@@ -76,6 +76,7 @@ builder.Services.AddScoped<ICartRepository, CartRepository>();
 
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<CategoryService>();
+builder.Services.AddScoped<PromotionService>();
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<TokenRevocationService>();
 builder.Services.AddScoped<AuthService>();
@@ -83,6 +84,8 @@ builder.Services.AddScoped<UserManagementService>();
 builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<CartComboService>();
 builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<CheckoutCatalogService>();
+builder.Services.AddScoped<CheckoutCatalogSeedService>();
 builder.Services.AddHttpClient<GeminiRecommendationService>();
 
 builder.Services.AddScoped<CheckoutFacade>();
@@ -174,6 +177,12 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var checkoutCatalogSeedService = scope.ServiceProvider.GetRequiredService<CheckoutCatalogSeedService>();
+    await checkoutCatalogSeedService.SeedAsync();
+}
 
 var enableSwagger = app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled");
 if (enableSwagger)

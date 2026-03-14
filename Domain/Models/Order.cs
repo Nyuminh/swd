@@ -26,9 +26,13 @@ public class Order
 
     public DateTime? ExpectedDate { get; set; }
 
+    public string IdempotencyKey { get; set; }
+
     public string Status { get; set; } // Pending, Shipped, Completed, Cancelled
 
     public decimal TotalAmount { get; set; }
+
+    public DateTime? InventoryReleasedAt { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow; // Fixed: removed duplicate
 
@@ -71,7 +75,15 @@ public class PaymentInfo
 {
     public string Method { get; set; }
 
+    public string Provider { get; set; }
+
+    public string OptionId { get; set; }
+
     public string Status { get; set; }
+
+    public string TransactionReference { get; set; }
+
+    public string FailureReason { get; set; }
 
     public DateTime? PaidAt { get; set; }
 }

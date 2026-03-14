@@ -33,5 +33,9 @@ namespace swd.Infrastructure.Repositories
 
         public async Task<List<Order>> GetByStatusAsync(string status) =>
             await _collection.Find(o => o.Status == status).ToListAsync();
+
+        public async Task<Order?> GetByUserIdAndIdempotencyKeyAsync(string userId, string idempotencyKey) =>
+            await _collection.Find(o => o.UserId == userId && o.IdempotencyKey == idempotencyKey)
+                .FirstOrDefaultAsync();
     }
 }

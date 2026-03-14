@@ -9,15 +9,24 @@ namespace swd.Application.Facades
         private readonly IProductRepository _productRepo;
         private readonly IOrderRepository _orderRepo;
         private readonly IRepository<Promotion> _promoRepo;
+        private readonly IRepository<ShippingOption> _shippingRepo;
+        private readonly IRepository<PaymentOption> _paymentRepo;
+        private readonly IUserRepository _userRepo;
 
         public CheckoutFacade(
             IProductRepository productRepo,
             IOrderRepository orderRepo,
-            IRepository<Promotion> promoRepo)
+            IRepository<Promotion> promoRepo,
+            IRepository<ShippingOption> shippingRepo,
+            IRepository<PaymentOption> paymentRepo,
+            IUserRepository userRepo)
         {
             _productRepo = productRepo;
             _orderRepo = orderRepo;
             _promoRepo = promoRepo;
+            _shippingRepo = shippingRepo;
+            _paymentRepo = paymentRepo;
+            _userRepo = userRepo;
         }
 
         public async Task<CheckoutResponse> PlaceOrder(CheckoutRequest request)
@@ -29,6 +38,34 @@ namespace swd.Application.Facades
 
             if (request.Items == null || request.Items.Count == 0)
                 throw new ArgumentException("At least one item is required.", nameof(request.Items));
+
+            if (string.IsNullOrWhiteSpace(request.IdempotencyKey))
+                throw new ArgumentException("IdempotencyKey is required.", nameof(request.IdempotencyKey));
+
+            if (string.IsNullOrWhiteSpace(request.ShippingOptionId))
+                throw new ArgumentException("ShippingOptionId is required.", nameof(request.ShippingOptionId));
+
+            if (string.IsNullOrWhiteSpace(request.PaymentOptionId))
+                throw new ArgumentException("PaymentOptionId is required.", nameof(request.PaymentOptionId));
+
+            var existingOrder = await _orderRepo.GetByUserIdAndIdempotencyKeyAsync(
+                request.UserId,
+                request.IdempotencyKey.Trim());
+            if (existingOrder != null)
+            {
+                return BuildResponse(existingOrder);
+            }
+
+            var shippingOption = await _shippingRepo.GetByIdAsync(request.ShippingOptionId);
+            if (shippingOption == null || !shippingOption.IsActive)
+                throw new ArgumentException("Invalid or inactive shipping option.", nameof(request.ShippingOptionId));
+
+            var paymentOption = await _paymentRepo.GetByIdAsync(request.PaymentOptionId);
+            if (paymentOption == null || !paymentOption.IsActive)
+                throw new ArgumentException("Invalid or inactive payment option.", nameof(request.PaymentOptionId));
+
+            var user = await _userRepo.GetByIdAsync(request.UserId);
+            var shippingContact = ResolveShippingContact(request.Shipping, user);
 
             foreach (var item in request.Items)
             {
@@ -77,16 +114,22 @@ namespace swd.Application.Facades
             {
                 var builder = new OrderBuilder()
                     .SetUser(request.UserId)
+                    .SetIdempotencyKey(request.IdempotencyKey.Trim())
                     .SetShipping(new ShippingInfo
                     {
-                        FullName = request.Shipping.FullName,
-                        Address = request.Shipping.Address,
-                        Phone = request.Shipping.Phone,
-                        Method = request.Shipping.Method,
-                        Fee = 30000, // Fixed fee for now or could be calculated
+                        FullName = shippingContact.FullName,
+                        Address = shippingContact.Address,
+                        Phone = shippingContact.Phone,
+                        Carrier = shippingOption.Carrier,
+                        Method = shippingOption.Name,
+                        Fee = shippingOption.Fee,
                         Status = "Pending"
                     })
-                    .SetPayment(request.PaymentMethod);
+                    .SetPayment(
+                        paymentOption.DisplayName,
+                        paymentOption.Provider,
+                        paymentOption.Id)
+                    .SetStatus(paymentOption.IsOnline ? "AwaitingPayment" : "Pending");
 
                 if (request.Prescription != null)
                 {
@@ -113,7 +156,11 @@ namespace swd.Application.Facades
                 {
                     OrderId = order.Id,
                     TotalAmount = order.TotalAmount,
-                    Status = order.Status
+                    Status = order.Status,
+                    PaymentStatus = order.Payment?.Status ?? string.Empty,
+                    PaymentOptionId = order.Payment?.OptionId ?? string.Empty,
+                    PaymentReference = order.Payment?.TransactionReference ?? string.Empty,
+                    ShippingFee = order.Shipping?.Fee ?? 0
                 };
             }
             catch
@@ -129,6 +176,47 @@ namespace swd.Application.Facades
             {
                 await _productRepo.ReleaseInventoryAsync(rp.Product.Id, rp.Quantity);
             }
+        }
+
+        private static CheckoutShippingRequest ResolveShippingContact(CheckoutShippingRequest? request, User? user)
+        {
+            var fullName = string.IsNullOrWhiteSpace(request?.FullName)
+                ? user?.Username?.Trim() ?? string.Empty
+                : request.FullName.Trim();
+            var address = string.IsNullOrWhiteSpace(request?.Address)
+                ? user?.Address?.Trim() ?? string.Empty
+                : request.Address.Trim();
+            var phone = string.IsNullOrWhiteSpace(request?.Phone)
+                ? user?.Phone?.Trim() ?? string.Empty
+                : request.Phone.Trim();
+
+            if (string.IsNullOrWhiteSpace(fullName)
+                || string.IsNullOrWhiteSpace(address)
+                || string.IsNullOrWhiteSpace(phone))
+            {
+                throw new ArgumentException("Shipping recipient information is required.", nameof(request));
+            }
+
+            return new CheckoutShippingRequest
+            {
+                FullName = fullName,
+                Address = address,
+                Phone = phone
+            };
+        }
+
+        private static CheckoutResponse BuildResponse(Order order)
+        {
+            return new CheckoutResponse
+            {
+                OrderId = order.Id,
+                TotalAmount = order.TotalAmount,
+                Status = order.Status,
+                PaymentStatus = order.Payment?.Status ?? string.Empty,
+                PaymentOptionId = order.Payment?.OptionId ?? string.Empty,
+                PaymentReference = order.Payment?.TransactionReference ?? string.Empty,
+                ShippingFee = order.Shipping?.Fee ?? 0
+            };
         }
     }
 }
