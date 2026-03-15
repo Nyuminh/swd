@@ -39,8 +39,6 @@ namespace swd.Application.DTOs.Order
     {
         public string Outcome { get; set; } = string.Empty;
 
-        public string? TransactionReference { get; set; }
-
         public string? FailureReason { get; set; }
     }
 }

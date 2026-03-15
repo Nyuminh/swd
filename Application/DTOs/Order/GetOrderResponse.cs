@@ -9,6 +9,7 @@
         public PaymentInfoDto? Payment { get; set; }
         public PrescriptionInfoDto? Prescription { get; set; }
         public PromotionSnapshotDto? Promotion { get; set; }
+        public ReturnRequestDto? ReturnRequest { get; set; }
         public string Status { get; set; } = string.Empty;
         public decimal TotalAmount { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -59,5 +60,12 @@
     {
         public string PromotionId { get; set; } = string.Empty;
         public decimal DiscountPercent { get; set; }
+    }
+
+    public class ReturnRequestDto
+    {
+        public string Status { get; set; } = string.Empty;
+        public string Reason { get; set; } = string.Empty;
+        public DateTime? CreatedAt { get; set; }
     }
 }

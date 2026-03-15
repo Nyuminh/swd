@@ -88,6 +88,60 @@ namespace swd.Application.Services
             await _orderRepository.DeleteAsync(id);
         }
 
+        public async Task<GetOrderResponse> RequestReturnAsync(string id, CreateReturnRequest request)
+        {
+            var existingOrder = await _orderRepository.GetByIdAsync(id);
+            if (existingOrder == null)
+                throw new KeyNotFoundException($"Order with ID {id} not found.");
+
+            ValidateReturnRequest(existingOrder, request);
+
+            existingOrder.ReturnRequest = new ReturnRequestInfo
+            {
+                Status = "Pending",
+                Reason = request.Reason.Trim(),
+                CreatedAt = DateTime.UtcNow
+            };
+            existingOrder.UpdatedAt = DateTime.UtcNow;
+
+            await _orderRepository.UpdateAsync(id, existingOrder);
+            return MapToResponse(existingOrder);
+        }
+
+        public async Task<GetOrderResponse> ProcessReturnRequestAsync(string id, ProcessReturnRequest request)
+        {
+            var existingOrder = await _orderRepository.GetByIdAsync(id);
+            if (existingOrder == null)
+                throw new KeyNotFoundException($"Order with ID {id} not found.");
+
+            ValidateReturnProcessing(existingOrder, request);
+
+            if (string.Equals(request.Outcome, "Approved", StringComparison.OrdinalIgnoreCase))
+            {
+                existingOrder.ReturnRequest!.Status = "Approved";
+                existingOrder.Status = "Returned";
+
+                if (existingOrder.Payment != null
+                    && string.Equals(existingOrder.Payment.Status, "Paid", StringComparison.OrdinalIgnoreCase))
+                {
+                    existingOrder.Payment.Status = "Refunded";
+                }
+
+                if (!existingOrder.InventoryReleasedAt.HasValue)
+                {
+                    await ReleaseInventoryAsync(existingOrder);
+                }
+            }
+            else
+            {
+                existingOrder.ReturnRequest!.Status = "Rejected";
+            }
+
+            existingOrder.UpdatedAt = DateTime.UtcNow;
+            await _orderRepository.UpdateAsync(id, existingOrder);
+            return MapToResponse(existingOrder);
+        }
+
         public async Task<GetOrderResponse> ConfirmDemoPaymentAsync(string id, ConfirmDemoPaymentRequest request)
         {
             var existingOrder = await _orderRepository.GetByIdAsync(id);
@@ -101,9 +155,7 @@ namespace swd.Application.Services
             {
                 existingOrder.Payment.Status = "Paid";
                 existingOrder.Payment.PaidAt = DateTime.UtcNow;
-                existingOrder.Payment.TransactionReference = string.IsNullOrWhiteSpace(request.TransactionReference)
-                    ? $"demo-{Guid.NewGuid():N}"
-                    : request.TransactionReference.Trim();
+                existingOrder.Payment.TransactionReference = $"demo-{Guid.NewGuid():N}";
                 existingOrder.Payment.FailureReason = string.Empty;
 
                 if (string.Equals(existingOrder.Status, "AwaitingPayment", StringComparison.OrdinalIgnoreCase))
@@ -115,7 +167,7 @@ namespace swd.Application.Services
             {
                 existingOrder.Payment.Status = "Failed";
                 existingOrder.Payment.FailureReason = request.FailureReason?.Trim() ?? "Demo payment failed.";
-                existingOrder.Payment.TransactionReference = request.TransactionReference?.Trim() ?? string.Empty;
+                existingOrder.Payment.TransactionReference = string.Empty;
                 existingOrder.Payment.PaidAt = null;
                 existingOrder.Status = "PaymentFailed";
 
@@ -212,6 +264,12 @@ namespace swd.Application.Services
                     PromotionId = order.Promotion.PromotionId,
                     DiscountPercent = order.Promotion.DiscountPercent
                 } : null,
+                ReturnRequest = order.ReturnRequest != null ? new ReturnRequestDto
+                {
+                    Status = order.ReturnRequest.Status,
+                    Reason = order.ReturnRequest.Reason,
+                    CreatedAt = order.ReturnRequest.CreatedAt
+                } : null,
                 Status = order.Status,
                 TotalAmount = order.TotalAmount,
                 CreatedAt = order.CreatedAt,
@@ -239,12 +297,42 @@ namespace swd.Application.Services
             if (string.Equals(order.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
                 return;
 
+            if (string.Equals(order.Status, "Returned", StringComparison.OrdinalIgnoreCase))
+                return;
+
             if (!string.Equals(order.Shipping?.Status, "Delivered", StringComparison.OrdinalIgnoreCase))
                 return;
 
             order.Payment!.Status = "Paid";
             order.Payment.PaidAt ??= order.Shipping.DeliveredAt ?? DateTime.UtcNow;
             order.Status = "Completed";
+        }
+
+        private static void ValidateReturnRequest(Order order, CreateReturnRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Reason))
+                throw new ArgumentException("Return reason is required.", nameof(request.Reason));
+
+            if (!string.Equals(order.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Only completed orders can create a return request.");
+
+            if (HasActiveReturnRequest(order))
+                throw new InvalidOperationException("Return request already exists for this order.");
+        }
+
+        private static void ValidateReturnProcessing(Order order, ProcessReturnRequest request)
+        {
+            if (order.ReturnRequest == null
+                || !string.Equals(order.ReturnRequest.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Order does not have a pending return request.");
+            }
+
+            if (!string.Equals(request.Outcome, "Approved", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(request.Outcome, "Rejected", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Outcome must be either 'Approved' or 'Rejected'.", nameof(request.Outcome));
+            }
         }
 
         private static bool ShouldReleaseInventory(Order order, string nextStatus)
@@ -270,6 +358,13 @@ namespace swd.Application.Services
             return string.Equals(payment.OptionId, "payment-cod", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(payment.Method, "COD", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(payment.Method, "Cash on Delivery", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool HasActiveReturnRequest(Order order)
+        {
+            return order.ReturnRequest != null
+                && !string.IsNullOrWhiteSpace(order.ReturnRequest.Status)
+                && !string.Equals(order.ReturnRequest.Status, "Rejected", StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task ReleaseInventoryAsync(Order order)

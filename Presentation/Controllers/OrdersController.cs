@@ -87,6 +87,61 @@ namespace swd.Presentation.Controllers
             }
         }
 
+        [HttpPost("{id}/return-request")]
+        public async Task<IActionResult> SubmitReturnRequest(string id, [FromBody] CreateReturnRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var order = await _orderService.GetOrderByIdAsync(id);
+                if (!CanAccessUserOrders(order.UserId))
+                    return Forbid();
+
+                var response = await _orderService.RequestReturnAsync(id, request);
+                return Ok(response);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}/return-request")]
+        [Authorize(Roles = "Admin,Staff")]
+        public async Task<IActionResult> ReviewReturnRequest(string id, [FromBody] ProcessReturnRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var response = await _orderService.ProcessReturnRequestAsync(id, request);
+                return Ok(response);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
         [HttpGet]
         [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> GetAllOrders()
