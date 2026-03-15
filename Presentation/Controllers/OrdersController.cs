@@ -186,7 +186,7 @@ namespace swd.Presentation.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin,Staff")]
+        //[Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> UpdateOrder(string id, [FromBody] UpdateOrderRequest request)
         {
             if (!ModelState.IsValid)
