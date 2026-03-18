@@ -9,16 +9,16 @@ namespace swd.Presentation.Controllers
     [Route("api/ai")]
     public class AiController : ControllerBase
     {
-        private readonly GeminiRecommendationService _geminiRecommendationService;
+        private readonly AiRecommendService _aiRecommendService;
 
-        public AiController(GeminiRecommendationService geminiRecommendationService)
+        public AiController(AiRecommendService aiRecommendService)
         {
-            _geminiRecommendationService = geminiRecommendationService;
+            _aiRecommendService = aiRecommendService;
         }
 
-        [HttpPost("glasses-recommendations")]
+        [HttpPost("recommend")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> RecommendGlasses([FromForm] GlassesRecommendationRequest request)
+        public async Task<IActionResult> RecommendGlasses([FromForm] RecommendRequest request)
         {
             if (request.Portrait is null || request.Portrait.Length == 0)
                 return BadRequest(new { message = "Portrait image is required." });
@@ -34,7 +34,7 @@ namespace swd.Presentation.Controllers
                 await using var memoryStream = new MemoryStream();
                 await request.Portrait.CopyToAsync(memoryStream, HttpContext.RequestAborted);
 
-                var response = await _geminiRecommendationService.RecommendAsync(
+                var response = await _aiRecommendService.RecommendAsync(
                     memoryStream.ToArray(),
                     request.Portrait.ContentType,
                     request.MaxRecommendations,

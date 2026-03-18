@@ -86,7 +86,7 @@ builder.Services.AddScoped<CartComboService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<CheckoutCatalogService>();
 builder.Services.AddScoped<CheckoutCatalogSeedService>();
-builder.Services.AddHttpClient<GeminiRecommendationService>();
+builder.Services.AddHttpClient<AiRecommendService>();
 
 builder.Services.AddScoped<CheckoutFacade>();
 

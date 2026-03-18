@@ -2,23 +2,23 @@ using System.Text.Json.Serialization;
 
 namespace swd.Application.DTOs.Ai
 {
-    public class GlassesRecommendationRequest
+    public class RecommendRequest
     {
         public IFormFile? Portrait { get; set; }
 
         public int? MaxRecommendations { get; set; }
     }
 
-    public class GlassesRecommendationResponse
+    public class RecommendResponse
     {
         [JsonPropertyName("analysis")]
-        public GlassesAnalysisResult Analysis { get; set; } = new();
+        public FaceAnalysis Analysis { get; set; } = new();
 
         [JsonPropertyName("recommendations")]
-        public List<GlassesRecommendationItem> Recommendations { get; set; } = new();
+        public List<RecommendItem> Recommendations { get; set; } = new();
 
         [JsonPropertyName("frames_to_avoid")]
-        public List<FrameAvoidanceItem> FramesToAvoid { get; set; } = new();
+        public List<AvoidFrameItem> FramesToAvoid { get; set; } = new();
 
         [JsonPropertyName("styling_tips")]
         public List<string> StylingTips { get; set; } = new();
@@ -27,7 +27,7 @@ namespace swd.Application.DTOs.Ai
         public string Summary { get; set; } = string.Empty;
     }
 
-    public class GlassesAnalysisResult
+    public class FaceAnalysis
     {
         [JsonPropertyName("face_shape")]
         public string FaceShape { get; set; } = "unknown";
@@ -36,7 +36,7 @@ namespace swd.Application.DTOs.Ai
         public decimal ConfidenceScore { get; set; }
 
         [JsonPropertyName("facial_features")]
-        public FacialFeaturesResult FacialFeatures { get; set; } = new();
+        public FaceFeatures FacialFeatures { get; set; } = new();
 
         [JsonPropertyName("skin_tone")]
         public string SkinTone { get; set; } = "unknown";
@@ -45,7 +45,7 @@ namespace swd.Application.DTOs.Ai
         public string StylePersonality { get; set; } = "unknown";
     }
 
-    public class FacialFeaturesResult
+    public class FaceFeatures
     {
         [JsonPropertyName("face_ratio")]
         public string FaceRatio { get; set; } = "unknown";
@@ -66,7 +66,7 @@ namespace swd.Application.DTOs.Ai
         public string NoseBridge { get; set; } = "unknown";
     }
 
-    public class GlassesRecommendationItem
+    public class RecommendItem
     {
         [JsonPropertyName("rank")]
         public int Rank { get; set; }
@@ -98,17 +98,11 @@ namespace swd.Application.DTOs.Ai
         [JsonPropertyName("frame_width")]
         public string FrameWidth { get; set; } = "unknown";
 
-        [JsonPropertyName("bridge_type")]
-        public string BridgeType { get; set; } = "unknown";
-
-        [JsonPropertyName("temple_style")]
-        public string TempleStyle { get; set; } = "unknown";
-
         [JsonPropertyName("material_suggestion")]
         public string MaterialSuggestion { get; set; } = string.Empty;
 
         [JsonPropertyName("color_recommendations")]
-        public List<ColorRecommendationItem> ColorRecommendations { get; set; } = new();
+        public List<ColorTip> ColorRecommendations { get; set; } = new();
 
         [JsonPropertyName("size_guide")]
         public FrameSizeGuide SizeGuide { get; set; } = new();
@@ -126,7 +120,7 @@ namespace swd.Application.DTOs.Ai
         public int MatchScore { get; set; }
     }
 
-    public class ColorRecommendationItem
+    public class ColorTip
     {
         [JsonPropertyName("color")]
         public string Color { get; set; } = string.Empty;
@@ -150,7 +144,7 @@ namespace swd.Application.DTOs.Ai
         public string TempleLengthMm { get; set; } = "unknown";
     }
 
-    public class FrameAvoidanceItem
+    public class AvoidFrameItem
     {
         [JsonPropertyName("frame_style")]
         public string FrameStyle { get; set; } = string.Empty;

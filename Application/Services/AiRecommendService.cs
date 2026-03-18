@@ -8,7 +8,7 @@ using swd.Settings;
 
 namespace swd.Application.Services
 {
-    public class GeminiRecommendationService
+    public class AiRecommendService
     {
         private const int MaxPortraitBytes = 10 * 1024 * 1024;
         private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
@@ -20,7 +20,7 @@ namespace swd.Application.Services
         private readonly GeminiSettings _settings;
         private readonly IProductRepository _productRepository;
 
-        public GeminiRecommendationService(
+        public AiRecommendService(
             HttpClient httpClient,
             IOptions<GeminiSettings> settings,
             IProductRepository productRepository)
@@ -30,7 +30,7 @@ namespace swd.Application.Services
             _productRepository = productRepository;
         }
 
-        public async Task<GlassesRecommendationResponse> RecommendAsync(
+        public async Task<RecommendResponse> RecommendAsync(
             byte[] portraitBytes,
             string mimeType,
             int? maxRecommendations = null,
@@ -78,7 +78,7 @@ namespace swd.Application.Services
             if (string.IsNullOrWhiteSpace(jsonPayload))
                 throw new InvalidOperationException("Gemini API did not return recommendation content.");
 
-            var modelResponse = JsonSerializer.Deserialize<GeminiRecommendationPayload>(jsonPayload, JsonOptions)
+            var modelResponse = JsonSerializer.Deserialize<GeminiPayload>(jsonPayload, JsonOptions)
                 ?? throw new InvalidOperationException("Gemini API returned invalid recommendation JSON.");
 
             return MapToResponse(modelResponse, candidateProducts, normalizedMaxRecommendations);
@@ -301,7 +301,7 @@ namespace swd.Application.Services
                             required = new[]
                             {
                                 "productId", "rank", "frame_style", "frame_shape", "why_suits_you", "frame_width",
-                                "bridge_type", "temple_style", "material_suggestion", "color_recommendations",
+                                "material_suggestion", "color_recommendations",
                                 "size_guide", "brands_examples", "price_range", "occasions", "match_score"
                             },
                             properties = new
@@ -312,8 +312,6 @@ namespace swd.Application.Services
                                 frame_shape = new { type = "string" },
                                 why_suits_you = new { type = "string" },
                                 frame_width = new { type = "string" },
-                                bridge_type = new { type = "string" },
-                                temple_style = new { type = "string" },
                                 material_suggestion = new { type = "string" },
                                 color_recommendations = new
                                 {
@@ -383,8 +381,8 @@ namespace swd.Application.Services
             };
         }
 
-        private static GlassesRecommendationResponse MapToResponse(
-            GeminiRecommendationPayload payload,
+        private static RecommendResponse MapToResponse(
+            GeminiPayload payload,
             IReadOnlyList<Product> candidateProducts,
             int maxRecommendations)
         {
@@ -393,7 +391,7 @@ namespace swd.Application.Services
                 .GroupBy(product => product.Id)
                 .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
 
-            var recommendations = (payload.Recommendations ?? new List<GeminiRecommendationPayloadItem>())
+            var recommendations = (payload.Recommendations ?? new List<GeminiItem>())
                 .Where(item => !string.IsNullOrWhiteSpace(item.ProductId) && productLookup.ContainsKey(item.ProductId))
                 .GroupBy(item => item.ProductId, StringComparer.Ordinal)
                 .Select(group => group.OrderBy(item => item.Rank <= 0 ? int.MaxValue : item.Rank).First())
@@ -403,7 +401,7 @@ namespace swd.Application.Services
                 .Select((item, index) =>
                 {
                     var product = productLookup[item.ProductId];
-                    return new GlassesRecommendationItem
+                    return new RecommendItem
                     {
                         Rank = item.Rank > 0 ? item.Rank : index + 1,
                         ProductId = product.Id,
@@ -415,8 +413,6 @@ namespace swd.Application.Services
                         FrameShape = NormalizeUnknown(item.FrameShape, product.FrameDetails?.FrameShape),
                         WhySuitsYou = NormalizeNarrative(item.WhySuitsYou),
                         FrameWidth = NormalizeFrameWidth(item.FrameWidth, product.FrameDetails?.FitType),
-                        BridgeType = NormalizeUnknown(item.BridgeType),
-                        TempleStyle = NormalizeUnknown(item.TempleStyle),
                         MaterialSuggestion = NormalizeUnknown(item.MaterialSuggestion, product.FrameDetails?.FrameMaterial),
                         ColorRecommendations = NormalizeColorRecommendations(item.ColorRecommendations),
                         SizeGuide = NormalizeSizeGuide(item.SizeGuide),
@@ -428,7 +424,7 @@ namespace swd.Application.Services
                 })
                 .ToList();
 
-            return new GlassesRecommendationResponse
+            return new RecommendResponse
             {
                 Analysis = NormalizeAnalysis(payload.Analysis),
                 Recommendations = recommendations,
@@ -438,15 +434,15 @@ namespace swd.Application.Services
             };
         }
 
-        private static GlassesAnalysisResult NormalizeAnalysis(GlassesAnalysisResult? analysis)
+        private static FaceAnalysis NormalizeAnalysis(FaceAnalysis? analysis)
         {
-            return new GlassesAnalysisResult
+            return new FaceAnalysis
             {
                 FaceShape = NormalizeUnknown(analysis?.FaceShape),
                 ConfidenceScore = ClampConfidence(analysis?.ConfidenceScore ?? 0m),
                 SkinTone = NormalizeUnknown(analysis?.SkinTone),
                 StylePersonality = NormalizeUnknown(analysis?.StylePersonality),
-                FacialFeatures = new FacialFeaturesResult
+                FacialFeatures = new FaceFeatures
                 {
                     FaceRatio = NormalizeUnknown(analysis?.FacialFeatures?.FaceRatio),
                     Jawline = NormalizeUnknown(analysis?.FacialFeatures?.Jawline),
@@ -458,17 +454,17 @@ namespace swd.Application.Services
             };
         }
 
-        private static List<ColorRecommendationItem> NormalizeColorRecommendations(IEnumerable<ColorRecommendationItem>? items)
+        private static List<ColorTip> NormalizeColorRecommendations(IEnumerable<ColorTip>? items)
         {
             return items?
                 .Where(item => !string.IsNullOrWhiteSpace(item.Color))
-                .Select(item => new ColorRecommendationItem
+                .Select(item => new ColorTip
                 {
                     Color = item.Color.Trim(),
                     Hex = NormalizeUnknown(item.Hex),
                     Reason = NormalizeNarrative(item.Reason)
                 })
-                .ToList() ?? new List<ColorRecommendationItem>();
+                .ToList() ?? new List<ColorTip>();
         }
 
         private static FrameSizeGuide NormalizeSizeGuide(FrameSizeGuide? sizeGuide)
@@ -481,16 +477,16 @@ namespace swd.Application.Services
             };
         }
 
-        private static List<FrameAvoidanceItem> NormalizeFramesToAvoid(IEnumerable<FrameAvoidanceItem>? items)
+        private static List<AvoidFrameItem> NormalizeFramesToAvoid(IEnumerable<AvoidFrameItem>? items)
         {
             return items?
                 .Where(item => !string.IsNullOrWhiteSpace(item.FrameStyle))
-                .Select(item => new FrameAvoidanceItem
+                .Select(item => new AvoidFrameItem
                 {
                     FrameStyle = item.FrameStyle.Trim(),
                     Reason = NormalizeNarrative(item.Reason)
                 })
-                .ToList() ?? new List<FrameAvoidanceItem>();
+                .ToList() ?? new List<AvoidFrameItem>();
         }
 
         private static List<string> NormalizeStringList(IEnumerable<string>? items)
@@ -617,16 +613,16 @@ namespace swd.Application.Services
             public string? Text { get; set; }
         }
 
-        private sealed class GeminiRecommendationPayload
+        private sealed class GeminiPayload
         {
             [JsonPropertyName("analysis")]
-            public GlassesAnalysisResult? Analysis { get; set; }
+            public FaceAnalysis? Analysis { get; set; }
 
             [JsonPropertyName("recommendations")]
-            public List<GeminiRecommendationPayloadItem>? Recommendations { get; set; }
+            public List<GeminiItem>? Recommendations { get; set; }
 
             [JsonPropertyName("frames_to_avoid")]
-            public List<FrameAvoidanceItem>? FramesToAvoid { get; set; }
+            public List<AvoidFrameItem>? FramesToAvoid { get; set; }
 
             [JsonPropertyName("styling_tips")]
             public List<string>? StylingTips { get; set; }
@@ -635,7 +631,7 @@ namespace swd.Application.Services
             public string? Summary { get; set; }
         }
 
-        private sealed class GeminiRecommendationPayloadItem
+        private sealed class GeminiItem
         {
             [JsonPropertyName("productId")]
             public string ProductId { get; set; } = string.Empty;
@@ -655,17 +651,11 @@ namespace swd.Application.Services
             [JsonPropertyName("frame_width")]
             public string? FrameWidth { get; set; }
 
-            [JsonPropertyName("bridge_type")]
-            public string? BridgeType { get; set; }
-
-            [JsonPropertyName("temple_style")]
-            public string? TempleStyle { get; set; }
-
             [JsonPropertyName("material_suggestion")]
             public string? MaterialSuggestion { get; set; }
 
             [JsonPropertyName("color_recommendations")]
-            public List<ColorRecommendationItem>? ColorRecommendations { get; set; }
+            public List<ColorTip>? ColorRecommendations { get; set; }
 
             [JsonPropertyName("size_guide")]
             public FrameSizeGuide? SizeGuide { get; set; }

@@ -1,0 +1,139 @@
+<mxfile host="app.diagrams.net" agent="Codex" compressed="false" version="29.6.1">
+  <diagram id="ai-class-diagram" name="AI Class Diagram">
+    <mxGraphModel dx="1920" dy="1080" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="10" value="&lt;b&gt;ControllerBase&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="860" y="40" width="250" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="11" value="&lt;b&gt;AiController&lt;/b&gt;&lt;hr/&gt;- _aiRecommendService : AiRecommendService&lt;br/&gt;+ RecommendGlasses(request)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="800" y="160" width="310" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="12" value="&lt;b&gt;RecommendRequest&lt;/b&gt;&lt;hr/&gt;+ Portrait : IFormFile?&lt;br/&gt;+ MaxRecommendations : int?" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="450" y="170" width="270" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="13" value="&lt;b&gt;RecommendResponse&lt;/b&gt;&lt;hr/&gt;+ Analysis : FaceAnalysis&lt;br/&gt;+ Recommendations : List&lt;RecommendItem&gt;&lt;br/&gt;+ FramesToAvoid : List&lt;AvoidFrameItem&gt;&lt;br/&gt;+ StylingTips : List&lt;string&gt;&lt;br/&gt;+ Summary : string" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="80" y="330" width="330" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="14" value="&lt;b&gt;AiRecommendService&lt;/b&gt;&lt;hr/&gt;- _httpClient : HttpClient&lt;br/&gt;- _settings : GeminiSettings&lt;br/&gt;- _productRepository : IProductRepository&lt;br/&gt;+ RecommendAsync(...)&lt;br/&gt;- GetCandidateProductsAsync()&lt;br/&gt;- BuildRequest()&lt;br/&gt;- MapToResponse()" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="740" y="350" width="380" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="15" value="&lt;b&gt;GeminiSettings&lt;/b&gt;&lt;hr/&gt;+ BaseUrl : string&lt;br/&gt;+ Model : string&lt;br/&gt;+ ApiKey : string&lt;br/&gt;+ MaxCandidateProducts : int&lt;br/&gt;+ MaxRecommendations : int" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="390" y="390" width="260" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="16" value="&lt;b&gt;&amp;lt;&amp;lt;interface&amp;gt;&amp;gt;&lt;/b&gt;&lt;br/&gt;&lt;b&gt;IProductRepository&lt;/b&gt;&lt;hr/&gt;+ GetAllAsync()&lt;br/&gt;+ GetByIdAsync(id)&lt;br/&gt;+ GetByCategoryAsync(categoryId)&lt;br/&gt;+ TryReserveInventoryAsync(id, qty)&lt;br/&gt;+ ReleaseInventoryAsync(id, qty)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;dashed=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="380" width="310" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="17" value="&lt;b&gt;ProductRepository&lt;/b&gt;&lt;hr/&gt;- _collection : IMongoCollection&lt;Product&gt;&lt;br/&gt;+ GetAllAsync()&lt;br/&gt;+ GetByIdAsync(id)&lt;br/&gt;+ GetByCategoryAsync(categoryId)&lt;br/&gt;+ TryReserveInventoryAsync(id, qty)&lt;br/&gt;+ ReleaseInventoryAsync(id, qty)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="590" width="320" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="18" value="&lt;b&gt;&amp;lt;&amp;lt;static&amp;gt;&amp;gt;&lt;/b&gt;&lt;br/&gt;&lt;b&gt;ProductImageUrlResolver&lt;/b&gt;&lt;hr/&gt;+ GetImageUrls(product)&lt;br/&gt;+ GetFirstImageUrl(product)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="1540" y="390" width="260" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="20" value="&lt;b&gt;FaceAnalysis&lt;/b&gt;&lt;hr/&gt;+ FaceShape : string&lt;br/&gt;+ ConfidenceScore : decimal&lt;br/&gt;+ FacialFeatures : FaceFeatures&lt;br/&gt;+ SkinTone : string&lt;br/&gt;+ StylePersonality : string" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="90" y="560" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="21" value="&lt;b&gt;FaceFeatures&lt;/b&gt;&lt;hr/&gt;+ FaceRatio : string&lt;br/&gt;+ Jawline : string&lt;br/&gt;+ Forehead : string&lt;br/&gt;+ Cheekbones : string&lt;br/&gt;+ EyeSpacing : string&lt;br/&gt;+ NoseBridge : string" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="110" y="740" width="290" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="22" value="&lt;b&gt;RecommendItem&lt;/b&gt;&lt;hr/&gt;+ Rank : int&lt;br/&gt;+ ProductId : string&lt;br/&gt;+ ProductName : string&lt;br/&gt;+ ProductType : string&lt;br/&gt;+ Price : decimal&lt;br/&gt;+ ImageUrls : List&lt;string&gt;&lt;br/&gt;+ FrameStyle : string&lt;br/&gt;+ FrameShape : string&lt;br/&gt;+ WhySuitsYou : string&lt;br/&gt;+ FrameWidth : string&lt;br/&gt;+ MaterialSuggestion : string&lt;br/&gt;+ SizeGuide : FrameSizeGuide&lt;br/&gt;+ MatchScore : int" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="20" y="920" width="360" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="23" value="&lt;b&gt;AvoidFrameItem&lt;/b&gt;&lt;hr/&gt;+ FrameStyle : string&lt;br/&gt;+ Reason : string" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="420" y="920" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="24" value="&lt;b&gt;ColorTip&lt;/b&gt;&lt;hr/&gt;+ Color : string&lt;br/&gt;+ Hex : string&lt;br/&gt;+ Reason : string" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="20" y="1200" width="250" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="25" value="&lt;b&gt;FrameSizeGuide&lt;/b&gt;&lt;hr/&gt;+ LensWidthMm : string&lt;br/&gt;+ BridgeMm : string&lt;br/&gt;+ TempleLengthMm : string" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="300" y="1200" width="250" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="30" value="&lt;b&gt;Product&lt;/b&gt;&lt;hr/&gt;+ Id : string&lt;br/&gt;+ Name : string&lt;br/&gt;+ CategoryId : string&lt;br/&gt;+ ProductType : string&lt;br/&gt;+ Price : decimal&lt;br/&gt;+ Size : string&lt;br/&gt;+ Color : string&lt;br/&gt;+ TargetGender : string&lt;br/&gt;+ Inventory : InventoryInfo&lt;br/&gt;+ Images : List&lt;ProductImage&gt;&lt;br/&gt;+ FrameDetails : FrameDetails?&lt;br/&gt;+ LensDetails : LensDetails?&lt;br/&gt;+ PromotionId : string" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="820" width="320" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="31" value="&lt;b&gt;InventoryInfo&lt;/b&gt;&lt;hr/&gt;+ Quantity : int&lt;br/&gt;+ LowStockThreshold : int" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="820" y="1090" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="32" value="&lt;b&gt;ProductImage&lt;/b&gt;&lt;hr/&gt;+ Url : string" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="1070" y="1090" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="33" value="&lt;b&gt;FrameDetails&lt;/b&gt;&lt;hr/&gt;+ FrameShape : string&lt;br/&gt;+ FitType : string&lt;br/&gt;+ StyleTags : List&lt;string&gt;&lt;br/&gt;+ FrameMaterial : string" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="1080" width="240" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="34" value="&lt;b&gt;LensDetails&lt;/b&gt;&lt;hr/&gt;+ LensType : string&lt;br/&gt;+ Index : string&lt;br/&gt;+ Coatings : List&lt;string&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=6;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="1590" y="1080" width="220" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="40" value="Legend&#xa;- Association: line&#xa;- Composition: filled diamond&#xa;- Inheritance / implementation: hollow triangle&#xa;- Aggregation: not used in this module" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fontSize=12;fillColor=#f8f9fa;strokeColor=#adb5bd;" vertex="1" parent="1">
+          <mxGeometry x="1540" y="60" width="270" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="100" edge="1" parent="1" source="11" target="10" style="endArrow=block;endFill=0;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="101" value="uses" edge="1" parent="1" source="11" target="14" style="startArrow=none;endArrow=none;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="102" value="accepts" edge="1" parent="1" source="11" target="12" style="startArrow=none;endArrow=none;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="103" value="returns" edge="1" parent="1" source="11" target="13" style="startArrow=none;endArrow=none;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="104" value="config" edge="1" parent="1" source="14" target="15" style="startArrow=none;endArrow=none;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="105" value="reads" edge="1" parent="1" source="14" target="16" style="startArrow=none;endArrow=none;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="106" value="uses" edge="1" parent="1" source="14" target="18" style="startArrow=none;endArrow=none;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="107" value="implements" edge="1" parent="1" source="17" target="16" style="dashed=1;endArrow=block;endFill=0;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="108" value="manages 0..*" edge="1" parent="1" source="16" target="30" style="startArrow=none;endArrow=none;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="109" value="1" edge="1" parent="1" source="13" target="20" style="startArrow=diamondThin;startFill=1;endArrow=none;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="110" value="0..*" edge="1" parent="1" source="13" target="22" style="startArrow=diamondThin;startFill=1;endArrow=none;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="111" value="0..*" edge="1" parent="1" source="13" target="23" style="startArrow=diamondThin;startFill=1;endArrow=none;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="112" value="1" edge="1" parent="1" source="20" target="21" style="startArrow=diamondThin;startFill=1;endArrow=none;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="113" value="0..*" edge="1" parent="1" source="22" target="24" style="startArrow=diamondThin;startFill=1;endArrow=none;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="114" value="1" edge="1" parent="1" source="22" target="25" style="startArrow=diamondThin;startFill=1;endArrow=none;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="115" value="1" edge="1" parent="1" source="30" target="31" style="startArrow=diamondThin;startFill=1;endArrow=none;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="116" value="0..*" edge="1" parent="1" source="30" target="32" style="startArrow=diamondThin;startFill=1;endArrow=none;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="117" value="0..1" edge="1" parent="1" source="30" target="33" style="startArrow=diamondThin;startFill=1;endArrow=none;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="118" value="0..1" edge="1" parent="1" source="30" target="34" style="startArrow=diamondThin;startFill=1;endArrow=none;html=1;rounded=0;strokeColor=#666666;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

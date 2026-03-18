@@ -15,7 +15,7 @@ public class SwaggerGenerationTests
     {
         var swagger = CreateSwagger();
 
-        Assert.Contains("/api/ai/glasses-recommendations", swagger.Paths.Keys);
+        Assert.Contains("/api/ai/recommend", swagger.Paths.Keys);
     }
 
     [Fact]

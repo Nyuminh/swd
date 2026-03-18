@@ -8,7 +8,7 @@ using swd.Settings;
 
 namespace swd.Tests;
 
-public class GeminiRecommendationServiceTests
+public class AiRecommendServiceTests
 {
     [Fact]
     public async Task RecommendAsync_ShouldUseUserPromptContractAndMapDetailedResponse()
@@ -98,7 +98,7 @@ public class GeminiRecommendationServiceTests
                 "application/json")
         });
 
-        var service = new GeminiRecommendationService(
+        var service = new AiRecommendService(
             new HttpClient(handler),
             Options.Create(new GeminiSettings
             {
@@ -122,8 +122,6 @@ public class GeminiRecommendationServiceTests
         Assert.Equal("product-2", response.Recommendations[0].ProductId);
         Assert.Equal("Navigator Pro", response.Recommendations[0].ProductName);
         Assert.Equal("Aviator kim loai mong", response.Recommendations[0].FrameStyle);
-        Assert.Equal("adjustable", response.Recommendations[0].BridgeType);
-        Assert.Equal("standard", response.Recommendations[0].TempleStyle);
         Assert.Equal("52-55mm", response.Recommendations[0].SizeGuide.LensWidthMm);
         Assert.Equal("Ray-Ban", response.Recommendations[0].BrandsExamples[0]);
         Assert.Equal("Mid: 500k-2M VND", response.Recommendations[0].PriceRange);
@@ -139,8 +137,8 @@ public class GeminiRecommendationServiceTests
         Assert.Contains("analysis", handler.LastRequestBody!);
         Assert.Contains("skin_tone", handler.LastRequestBody);
         Assert.Contains("style_personality", handler.LastRequestBody);
-        Assert.Contains("bridge_type", handler.LastRequestBody);
-        Assert.Contains("temple_style", handler.LastRequestBody);
+        Assert.DoesNotContain("bridge_type", handler.LastRequestBody);
+        Assert.DoesNotContain("temple_style", handler.LastRequestBody);
         Assert.Contains("size_guide", handler.LastRequestBody);
         Assert.Contains("brands_examples", handler.LastRequestBody);
         Assert.Contains("frames_to_avoid", handler.LastRequestBody);
@@ -159,7 +157,7 @@ public class GeminiRecommendationServiceTests
     [Fact]
     public async Task RecommendAsync_ShouldThrowWhenApiKeyMissing()
     {
-        var service = new GeminiRecommendationService(
+        var service = new AiRecommendService(
             new HttpClient(new FakeHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK))),
             Options.Create(new GeminiSettings()),
             new InMemoryProductRepository());

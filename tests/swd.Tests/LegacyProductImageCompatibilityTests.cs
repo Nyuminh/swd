@@ -64,7 +64,7 @@ public class LegacyProductImageCompatibilityTests
                 "application/json")
         });
 
-        var service = new GeminiRecommendationService(
+        var service = new AiRecommendService(
             new HttpClient(handler),
             Options.Create(new GeminiSettings
             {
