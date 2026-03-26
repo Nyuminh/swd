@@ -255,9 +255,24 @@ namespace swd.Application.Services
                 } : null,
                 Prescription = order.Prescription != null ? new PrescriptionInfoDto
                 {
-                    LeftEye = order.Prescription.LeftEye,
-                    RightEye = order.Prescription.RightEye,
-                    Describe = order.Prescription.Describe
+                    LeftEye = order.Prescription.LeftEye != null ? new EyePrescriptionDto
+                    {
+                        Sphere = order.Prescription.LeftEye.Sphere,
+                        Cylinder = order.Prescription.LeftEye.Cylinder,
+                        Axis = order.Prescription.LeftEye.Axis,
+                        Add = order.Prescription.LeftEye.Add
+                    } : null,
+                    RightEye = order.Prescription.RightEye != null ? new EyePrescriptionDto
+                    {
+                        Sphere = order.Prescription.RightEye.Sphere,
+                        Cylinder = order.Prescription.RightEye.Cylinder,
+                        Axis = order.Prescription.RightEye.Axis,
+                        Add = order.Prescription.RightEye.Add
+                    } : null,
+                    PupillaryDistance = order.Prescription.PupillaryDistance,
+                    ImageUrl = order.Prescription.ImageUrl,
+                    Notes = order.Prescription.Notes,
+                    VerifyStatus = order.Prescription.VerifyStatus
                 } : null,
                 Promotion = order.Promotion != null ? new PromotionSnapshotDto
                 {

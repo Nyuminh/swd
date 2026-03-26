@@ -1,4 +1,4 @@
-﻿using MongoDB.Bson;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 public class Order
@@ -89,11 +89,25 @@ public class PaymentInfo
 }
 public class PrescriptionInfo
 {
-    public string LeftEye { get; set; }
+    public EyePrescription LeftEye { get; set; }
 
-    public string RightEye { get; set; }
+    public EyePrescription RightEye { get; set; }
+    
+    public decimal? PupillaryDistance { get; set; }
 
-    public string Describe { get; set; }
+    public string Notes { get; set; }
+    
+    public string ImageUrl { get; set; }
+    
+    public string VerifyStatus { get; set; }
+}
+
+public class EyePrescription
+{
+    public decimal? Sphere { get; set; }
+    public decimal? Cylinder { get; set; }
+    public int? Axis { get; set; }
+    public decimal? Add { get; set; }
 }
 public class PromotionSnapshot
 {

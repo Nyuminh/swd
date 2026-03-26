@@ -43,7 +43,7 @@ public class OrderApiTests
             }
         });
         var orderRepository = new InMemoryOrderRepository();
-        var facade = new CheckoutFacade(productRepository, orderRepository, new InMemoryRepository<Promotion>());
+        var facade = new CheckoutFacade(productRepository, orderRepository, new InMemoryRepository<Promotion>(), new InMemoryRepository<ShippingOption>(new List<ShippingOption> { new ShippingOption { Id = "ship1", IsActive = true, Name = "Test", Carrier = "Test", Fee = 0 } }), new InMemoryRepository<PaymentOption>(new List<PaymentOption> { new PaymentOption { Id = "pay1", IsActive = true, DisplayName = "Test", Provider = "Test", IsOnline = false } }), new InMemoryUserRepository(new List<User> { new User { Id = "user-1", Username = "Test", Phone = "0909", Address = "Test" } }));
 
         var exception = await Assert.ThrowsAsync<ArgumentException>(() => facade.PlaceOrder(new CheckoutRequest
         {
@@ -53,7 +53,9 @@ public class OrderApiTests
                 new() { ProductId = "product-1", Quantity = 0 }
             },
             Shipping = new CheckoutShippingRequest { FullName = "Test", Address = "Test", Phone = "0909" },
-            PaymentMethod = "COD"
+            PaymentOptionId = "pay1",
+            ShippingOptionId = "ship1",
+            IdempotencyKey = "key1"
         }));
 
         Assert.Contains("Quantity", exception.Message, StringComparison.OrdinalIgnoreCase);
@@ -74,7 +76,7 @@ public class OrderApiTests
             }
         });
         var orderRepository = new InMemoryOrderRepository { FailOnCreate = true };
-        var facade = new CheckoutFacade(productRepository, orderRepository, new InMemoryRepository<Promotion>());
+        var facade = new CheckoutFacade(productRepository, orderRepository, new InMemoryRepository<Promotion>(), new InMemoryRepository<ShippingOption>(new List<ShippingOption> { new ShippingOption { Id = "ship1", IsActive = true, Name = "Test", Carrier = "Test", Fee = 0 } }), new InMemoryRepository<PaymentOption>(new List<PaymentOption> { new PaymentOption { Id = "pay1", IsActive = true, DisplayName = "Test", Provider = "Test", IsOnline = false } }), new InMemoryUserRepository(new List<User> { new User { Id = "user-1", Username = "Test", Phone = "0909", Address = "Test" } }));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => facade.PlaceOrder(new CheckoutRequest
         {
@@ -84,7 +86,9 @@ public class OrderApiTests
                 new() { ProductId = "product-2", Quantity = 2 }
             },
             Shipping = new CheckoutShippingRequest { FullName = "Test", Address = "Test", Phone = "0909" },
-            PaymentMethod = "COD"
+            PaymentOptionId = "pay1",
+            ShippingOptionId = "ship1",
+            IdempotencyKey = "key1"
         }));
 
         var product = await productRepository.GetByIdAsync("product-2");
@@ -107,8 +111,8 @@ public class OrderApiTests
         });
         var orderRepository = new InMemoryOrderRepository();
         var controller = CreateController(
-            new CheckoutFacade(productRepository, orderRepository, new InMemoryRepository<Promotion>()),
-            new OrderService(orderRepository),
+            new CheckoutFacade(productRepository, orderRepository, new InMemoryRepository<Promotion>(), new InMemoryRepository<ShippingOption>(new List<ShippingOption> { new ShippingOption { Id = "ship1", IsActive = true, Name = "Test", Carrier = "Test", Fee = 0 } }), new InMemoryRepository<PaymentOption>(new List<PaymentOption> { new PaymentOption { Id = "pay1", IsActive = true, DisplayName = "Test", Provider = "Test", IsOnline = false } }), new InMemoryUserRepository(new List<User> { new User { Id = "claim-user", Username = "Test", Phone = "0909", Address = "Test" } })),
+            new OrderService(orderRepository, productRepository),
             userId: "claim-user",
             role: "Customer");
 
@@ -120,7 +124,9 @@ public class OrderApiTests
                 new() { ProductId = "product-3", Quantity = 1 }
             },
             Shipping = new CheckoutShippingRequest { FullName = "Test", Address = "Test", Phone = "0909" },
-            PaymentMethod = "COD"
+            PaymentOptionId = "pay1",
+            ShippingOptionId = "ship1",
+            IdempotencyKey = "key1"
         });
 
         Assert.IsType<OkObjectResult>(result);
@@ -132,8 +138,8 @@ public class OrderApiTests
     public async Task GetOrdersByUser_ShouldReturnForbid_WhenCustomerRequestsAnotherUsersOrders()
     {
         var controller = CreateController(
-            new CheckoutFacade(new InMemoryProductRepository(), new InMemoryOrderRepository(), new InMemoryRepository<Promotion>()),
-            new OrderService(new InMemoryOrderRepository()),
+            new CheckoutFacade(new InMemoryProductRepository(), new InMemoryOrderRepository(), new InMemoryRepository<Promotion>(), new InMemoryRepository<ShippingOption>(), new InMemoryRepository<PaymentOption>(), new InMemoryUserRepository()),
+            new OrderService(new InMemoryOrderRepository(), new InMemoryProductRepository()),
             userId: "user-1",
             role: "Customer");
 
@@ -158,9 +164,10 @@ public class OrderApiTests
                 Items = new List<OrderItem>()
             }
         });
+        var productRepository = new InMemoryProductRepository();
         var controller = CreateController(
-            new CheckoutFacade(new InMemoryProductRepository(), orderRepository, new InMemoryRepository<Promotion>()),
-            new OrderService(orderRepository),
+            new CheckoutFacade(productRepository, orderRepository, new InMemoryRepository<Promotion>(), new InMemoryRepository<ShippingOption>(), new InMemoryRepository<PaymentOption>(), new InMemoryUserRepository()),
+            new OrderService(orderRepository, productRepository),
             userId: "another-user",
             role: "Customer");
 
@@ -202,7 +209,8 @@ public class OrderApiTests
                 }
             }
         });
-        var service = new OrderService(orderRepository);
+        var productRepository = new InMemoryProductRepository();
+        var service = new OrderService(orderRepository, productRepository);
 
         var response = await service.GetOrderByIdAsync("order-2");
         var shipping = Assert.IsType<ShippingInfoDto>(response.Shipping);
@@ -222,7 +230,7 @@ public class OrderApiTests
         string userId,
         string role)
     {
-        var controller = new OrdersController(checkoutFacade, orderService)
+        var controller = new OrdersController(checkoutFacade, orderService, null!)
         {
             ControllerContext = new ControllerContext
             {
@@ -372,6 +380,33 @@ public class OrderApiTests
         {
             return Task.FromResult(_orders.Where(x => x.Status == status).ToList());
         }
+
+        public Task<Order?> GetByUserIdAndIdempotencyKeyAsync(string userId, string idempotencyKey)
+        {
+            var order = _orders.FirstOrDefault(x => x.UserId == userId && x.IdempotencyKey == idempotencyKey);
+            return Task.FromResult(order);
+        }
+    }
+
+    private sealed class InMemoryUserRepository : IUserRepository
+    {
+        private readonly List<User> _items = new();
+        public InMemoryUserRepository(List<User>? seed = null) => _items = seed ?? new List<User>();
+        public Task<List<User>> GetAllAsync() => Task.FromResult(_items.ToList());
+        public Task<User> GetByIdAsync(string id) => Task.FromResult(_items.FirstOrDefault(x => x.Id == id)!);
+        public Task CreateAsync(User entity) { _items.Add(entity); return Task.CompletedTask; }
+        public Task UpdateAsync(string id, User entity) { var i = _items.FindIndex(x => x.Id == id); if (i>=0) _items[i] = entity; return Task.CompletedTask; }
+        public Task DeleteAsync(string id) { _items.RemoveAll(x => x.Id == id); return Task.CompletedTask; }
+        public Task<User?> GetByEmailAsync(string email) => Task.FromResult(_items.FirstOrDefault(x => x.Email == email));
+        public Task<User?> GetByUsernameAsync(string username) => Task.FromResult(_items.FirstOrDefault(x => x.Username == username));
+        public Task<bool> ExistsAsync(string email, string username) => Task.FromResult(_items.Any(x => x.Email == email || x.Username == username));
+        public Task UpdateVerificationAsync(string userId, string code, DateTime expiry) => Task.CompletedTask;
+        public Task MarkEmailVerifiedAsync(string userId) => Task.CompletedTask;
+        public Task UpdatePasswordResetCodeAsync(string userId, string code, DateTime expiry) => Task.CompletedTask;
+        public Task UpdatePasswordAsync(string userId, string newPasswordHash) => Task.CompletedTask;
+        public Task UpdateUserInfoAsync(string userId, string username, string email, string phone, string address) => Task.CompletedTask;
+        public Task UpdateUserRoleAsync(string userId, string newRole) => Task.CompletedTask;
+        public Task SetTokenInvalidBeforeAsync(string userId, DateTime invalidBeforeUtc) => Task.CompletedTask;
     }
 
     private sealed class InMemoryRepository<T> : IRepository<T>

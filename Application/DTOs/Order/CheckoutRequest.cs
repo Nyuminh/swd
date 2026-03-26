@@ -25,9 +25,19 @@ namespace swd.Application.DTOs.Order
 
     public class CheckoutPrescriptionRequest
     {
-        public string? LeftEye { get; set; }
-        public string? RightEye { get; set; }
-        public string? Describe { get; set; }
+        public EyePrescriptionDto? LeftEye { get; set; }
+        public EyePrescriptionDto? RightEye { get; set; }
+        public decimal? PupillaryDistance { get; set; }
+        public string? ImageUrl { get; set; }
+        public string? Notes { get; set; }
+    }
+
+    public class EyePrescriptionDto
+    {
+        public decimal? Sphere { get; set; }
+        public decimal? Cylinder { get; set; }
+        public int? Axis { get; set; }
+        public decimal? Add { get; set; }
     }
 
     public class CheckoutRequest

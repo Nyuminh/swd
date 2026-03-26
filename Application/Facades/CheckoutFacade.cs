@@ -135,9 +135,24 @@ namespace swd.Application.Facades
                 {
                     builder.SetPrescription(new PrescriptionInfo
                     {
-                        LeftEye = request.Prescription.LeftEye ?? "",
-                        RightEye = request.Prescription.RightEye ?? "",
-                        Describe = request.Prescription.Describe ?? ""
+                        LeftEye = request.Prescription.LeftEye != null ? new EyePrescription
+                        {
+                            Sphere = request.Prescription.LeftEye.Sphere,
+                            Cylinder = request.Prescription.LeftEye.Cylinder,
+                            Axis = request.Prescription.LeftEye.Axis,
+                            Add = request.Prescription.LeftEye.Add
+                        } : new EyePrescription(),
+                        RightEye = request.Prescription.RightEye != null ? new EyePrescription
+                        {
+                            Sphere = request.Prescription.RightEye.Sphere,
+                            Cylinder = request.Prescription.RightEye.Cylinder,
+                            Axis = request.Prescription.RightEye.Axis,
+                            Add = request.Prescription.RightEye.Add
+                        } : new EyePrescription(),
+                        PupillaryDistance = request.Prescription.PupillaryDistance,
+                        ImageUrl = request.Prescription.ImageUrl ?? string.Empty,
+                        Notes = request.Prescription.Notes ?? string.Empty,
+                        VerifyStatus = "Pending"
                     });
                 }
 

@@ -84,6 +84,7 @@ builder.Services.AddScoped<UserManagementService>();
 builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<CartComboService>();
 builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<PrescriptionService>();
 builder.Services.AddScoped<CheckoutCatalogService>();
 builder.Services.AddScoped<CheckoutCatalogSeedService>();
 builder.Services.AddHttpClient<AiRecommendService>();

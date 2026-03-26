@@ -1,4 +1,4 @@
-﻿namespace swd.Application.DTOs.Order
+namespace swd.Application.DTOs.Order
 {
     public class GetOrderResponse
     {
@@ -51,9 +51,12 @@
 
     public class PrescriptionInfoDto
     {
-        public string LeftEye { get; set; } = string.Empty;
-        public string RightEye { get; set; } = string.Empty;
-        public string Describe { get; set; } = string.Empty;
+        public EyePrescriptionDto? LeftEye { get; set; }
+        public EyePrescriptionDto? RightEye { get; set; }
+        public decimal? PupillaryDistance { get; set; }
+        public string? ImageUrl { get; set; }
+        public string? Notes { get; set; }
+        public string? VerifyStatus { get; set; }
     }
 
     public class PromotionSnapshotDto
